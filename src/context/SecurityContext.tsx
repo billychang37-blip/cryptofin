@@ -54,7 +54,7 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
         // 🛑 THE LOOP BREAKER
         // We query 'id' because user_security is linked 1:1 with auth.users
         const { data, error } = await supabase
-          .from('profiles')
+          .from('user_security')
           .select('pin_hash')
           .eq('id', user.id) // ✅ Matches the Primary Key 'id'
           .maybeSingle();
