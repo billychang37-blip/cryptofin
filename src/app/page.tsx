@@ -15,7 +15,7 @@ import { DownloadModal } from '@/components/landing/DownloadModal'
 
 export default function LandingPage() {
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
-  const open = () => setIsDownloadOpen(true);
+  const open = () => { /* setIsDownloadOpen(true); disabled for now */ };
   const close = () => setIsDownloadOpen(false);
 
   return (

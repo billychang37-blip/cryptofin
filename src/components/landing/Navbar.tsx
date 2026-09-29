@@ -41,7 +41,7 @@ export const Navbar = ({ onOpenDownload }: NavbarProps) => {
 
         {/* Right: Auth */}
         <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-bold text-slate-500 hover:text-[#111111] transition-colors">
+          <Link href="/auth/login" className="inline-flex items-center px-4 py-2 text-sm font-bold text-slate-500 hover:text-[#111111] transition-colors">
             Log In
           </Link>
           <Link
@@ -78,7 +78,7 @@ export const Navbar = ({ onOpenDownload }: NavbarProps) => {
             </a>
           ))}
           <button
-            onClick={() => { setMobileOpen(false); onOpenDownload?.() }}
+            onClick={(e) => { e.preventDefault(); setMobileOpen(false); }}
             className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#D4FF00] py-3.5 text-sm font-black text-slate-950 hover:bg-[#c8f200] transition-colors"
           >
             <Download className="h-4 w-4 stroke-[3]" />

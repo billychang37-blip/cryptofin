@@ -158,10 +158,18 @@ export default function DashboardPage() {
   }
 
   const shouldShowSetup = (!wallet || requiresSetup) && !setupComplete;
+  
+  useEffect(() => {
+    if (requiresSetup && !checkingAuth) {
+      router.push('/auth/recovery-phrase');
+    }
+  }, [requiresSetup, checkingAuth, router]);
+
   if (shouldShowSetup) {
     return (
-      <div className="min-h-screen bg-[#111111] flex items-center justify-center p-4">
-        
+      <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center p-4">
+        <Loader2 className="animate-spin text-[#D4FF00] mb-4" size={32} />
+        <p className="text-white text-sm font-semibold">Redirecting to complete account setup...</p>
       </div>
     );
   }
