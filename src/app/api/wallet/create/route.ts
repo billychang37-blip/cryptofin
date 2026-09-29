@@ -13,7 +13,7 @@ import * as bip39 from 'bip39';
 import { derivePath } from 'ed25519-hd-key';
 import * as bitcoin from 'bitcoinjs-lib';
 import BIP32Factory from 'bip32';
-import * as ecc from 'tiny-secp256k1';
+import * as ecc from '@bitcoinerlab/secp256k1';
 
 const bip32 = BIP32Factory(ecc);
 
