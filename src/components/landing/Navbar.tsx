@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Menu, X, Download } from 'lucide-react'
 
 interface NavbarProps {
-  onOpenDownload: () => void
+  onOpenDownload?: () => void
 }
 
 export const Navbar = ({ onOpenDownload }: NavbarProps) => {
@@ -78,7 +78,7 @@ export const Navbar = ({ onOpenDownload }: NavbarProps) => {
             </a>
           ))}
           <button
-            onClick={() => { setMobileOpen(false); onOpenDownload() }}
+            onClick={() => { setMobileOpen(false); onOpenDownload?.() }}
             className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#D4FF00] py-3.5 text-sm font-black text-slate-950 hover:bg-[#c8f200] transition-colors"
           >
             <Download className="h-4 w-4 stroke-[3]" />

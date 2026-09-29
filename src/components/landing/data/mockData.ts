@@ -1,4 +1,13 @@
-import type { CryptoAsset, ActivityItem, BentoFeature, Testimonial } from '../types'
+
+
+export type CryptoAsset = any;
+export type ActivityItem = any;
+export type BentoFeature = any;
+export type Testimonial = any;
+
+
+
+
 
 export const CRYPTO_ASSETS: CryptoAsset[] = [
   {
