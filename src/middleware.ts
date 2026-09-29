@@ -2,6 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // --- CLOUDFLARE WAF POST INTERCEPT ---
+  // Cloudflare Managed Challenge often redirects visitors back to the requested page 
+  // using a POST request. Vercel rejects POST requests to static frontend pages with a 405 error.
+  // This intercepts those POST requests and forces a 302 redirect to the same URL as a GET request.
+  if (request.method === 'POST' && !request.nextUrl.pathname.startsWith('/api')) {
+    return NextResponse.redirect(new URL(request.url), 302);
+  }
+
   // 1. Create an initial response
   // We need this to be a "let" because supabase might modify it to set cookies
   let response = NextResponse.next({
@@ -97,9 +105,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - api/auth (auth routes - let Supabase handle these directly)
-     * - api/diagnose (let our diagnostic tool run freely)
+     * - api (all API routes - explicitly excluded so POSTs hit the backend)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/auth|api/diagnose).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api).*)',
   ],
 };
