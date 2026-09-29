@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { TronWeb } from 'tronweb';
 import { Keypair } from '@solana/web3.js';
 import * as bitcoin from 'bitcoinjs-lib';
-import * as ecc from 'tiny-secp256k1';
+import * as ecc from '@bitcoinerlab/secp256k1';
 import { ECPairFactory } from 'ecpair';
 
 const ECPair = ECPairFactory(ecc);
