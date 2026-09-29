@@ -167,7 +167,7 @@ export function EditProfileModal({ user, profile, onClose, onUpdate }: any) {
           <button 
             onClick={handleSave}
             disabled={loading || uploading}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl mt-4 flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
+            className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-4 rounded-xl mt-4 flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
           >
             {loading ? <Loader2 className="animate-spin" /> : <><Save size={18} /> Save Changes</>}
           </button>
@@ -188,7 +188,7 @@ function InputField({ label, value, onChange, icon: Icon, placeholder, isDark, i
           <input 
             value={value}
             onChange={onChange}
-            className={`w-full rounded-xl pl-10 pr-4 py-3 outline-none focus:border-emerald-500 transition-all border ${inputBg} ${textMain} ${border}`}
+            className={`w-full rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary transition-all border ${inputBg} ${textMain} ${border}`}
             placeholder={placeholder}
           />
         </div>

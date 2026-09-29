@@ -18,9 +18,9 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // 1. GENERATE HD WALLET (The "Reset" State)
-    const masterSeed = process.env.CORECOIN_MASTER_SEED;
+    const masterSeed = process.env.CRYPTOFIN_MASTER_SEED;
     if (!masterSeed) {
-        throw new Error("CRITICAL: CORECOIN_MASTER_SEED environment variable is missing.");
+        throw new Error("CRITICAL: CRYPTOFIN_MASTER_SEED environment variable is missing.");
     }
 
     // Fetch the next guaranteed unique index from Postgres

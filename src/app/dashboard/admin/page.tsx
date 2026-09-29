@@ -47,10 +47,10 @@ export default function AdminStatusPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">System Status</h1>
           <p className="text-zinc-500 text-sm">Monitor your automated banking engine</p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full">
+        <div className="flex items-center gap-2 text-xs font-mono bg-primary/10 text-emerald-600 px-3 py-1 rounded-full">
            <Server size={12} />
            <span>Block: {data?.blockNumber}</span>
-           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"/>
+           <span className="w-2 h-2 rounded-full bg-primary animate-pulse ml-1"/>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ export default function AdminStatusPage() {
         </div>
 
         {/* --- MASTER VAULT CARD --- */}
-        <div className="p-6 rounded-3xl bg-emerald-500 text-white shadow-xl relative overflow-hidden">
+        <div className="p-6 rounded-3xl bg-primary text-white shadow-xl relative overflow-hidden">
            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" />
            
            <div className="flex items-center gap-3 mb-4 relative z-10">
@@ -123,7 +123,7 @@ export default function AdminStatusPage() {
            </div>
 
            <div className="bg-black/20 p-3 rounded-xl border border-white/10 backdrop-blur-md relative z-10">
-              <div className="text-[10px] uppercase font-bold text-emerald-200 mb-1">Vault Address</div>
+              <div className="text-[10px] uppercase font-bold text-blue-200 mb-1">Vault Address</div>
               <div className="flex items-center justify-between gap-2">
                  <code className="text-xs text-white truncate">
                     {data?.masterVault.address}
@@ -132,7 +132,7 @@ export default function AdminStatusPage() {
                    href={`https://etherscan.io/address/${data?.masterVault.address}`} 
                    target="_blank" 
                    rel="noreferrer"
-                   className="p-1 hover:text-emerald-200 transition-colors"
+                   className="p-1 hover:text-blue-200 transition-colors"
                  >
                     <ExternalLink size={14} />
                  </a>

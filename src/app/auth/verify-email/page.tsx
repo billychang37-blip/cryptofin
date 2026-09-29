@@ -1,182 +1,146 @@
 "use client";
 import React, { useState, useRef, useEffect, Suspense } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Mail, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { AuthPageWrapper } from '@/components/auth/AuthPageWrapper';
 import { createClient } from '@/lib/supabase';
 
-const OTP_LENGTH = 8; 
-
-// 1. Logic moved here to be wrapped in Suspense
 function VerifyEmailForm() {
-  const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   
-  const [otp, setOtp] = useState(new Array(OTP_LENGTH).fill(''));
+  const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [error, setError] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => { inputRefs.current[0]?.focus(); }, []);
+  // Simple countdown timer
+  const [timer, setTimer] = useState(45);
+  
+  useEffect(() => {
+    if (timer > 0) {
+      const id = setTimeout(() => setTimer(prev => prev - 1), 1000);
+      return () => clearTimeout(id);
+    }
+  }, [timer]);
 
   const handleChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
+    if (value.length > 1) return; // Prevent multiple chars
+    const newCode = [...code];
+    newCode[index] = value;
+    setCode(newCode);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) inputRefs.current[index - 1]?.focus();
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData('text').slice(0, OTP_LENGTH).split('');
-    const newOtp = [...otp];
-    pasteData.forEach((char, i) => { if (i < OTP_LENGTH) newOtp[i] = char; });
-    setOtp(newOtp);
-    if (pasteData.length > 0) inputRefs.current[Math.min(pasteData.length, OTP_LENGTH - 1)]?.focus();
-  };
-
-  const handleVerify = async () => {
-    const token = otp.join('');
-    if (token.length !== OTP_LENGTH || !email) return;
+    const otp = code.join('');
+    if (otp.length < 6) {
+      toast.error("Please enter all 6 digits");
+      return;
+    }
 
     setLoading(true);
-    setError('');
-
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token,
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email || '',
+      token: otp,
       type: 'signup'
     });
 
     if (error) {
-      setError(error.message);
+      toast.error(error.message || "Invalid code");
       setLoading(false);
-      setOtp(new Array(OTP_LENGTH).fill(''));
+      setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } else {
       toast.success("Email verified successfully!");
-      router.push('/auth/success'); 
+      router.push(`/auth/recovery-phrase?email=${encodeURIComponent(email || '')}`); 
     }
   };
 
-  const handleResend = async () => {
-    if (!email) return;
-    setResending(true);
-    setError('');
-
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: email,
-    });
-
-    if (error) {
-      if (error.message.includes("already registered")) {
-        toast.error("User already registered. Please log in.");
-        router.push('/auth/login');
-      } else {
-        toast.error("Rate limit: Please wait 60 seconds.");
-      }
-    } else {
-      toast.success("Code resent! Check your inbox.");
-    }
-    setResending(false);
-  };
-
-  useEffect(() => {
-    if (otp.every(d => d !== '')) handleVerify();
-  }, [otp]);
-
-  if (!email) return <div className="text-white text-center mt-20">No email provided.</div>;
+  const titleMain = (
+    <>
+      Confirm your<br />
+      <span className="font-serif italic text-slate-500 font-normal">OTP</span>
+    </>
+  );
 
   return (
-    <div className="bg-[#0a0a0a]/80 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 ring-4 ring-emerald-500/5">
-        <Mail size={32} />
+    <AuthPageWrapper
+      titleTop="SECURITY"
+      titleMain={titleMain}
+      subtitle={`We've sent a 6-digit code to your email (${email || 'your email'}).`}
+      imageSrc="/otpimg.png"
+    >
+      <div className="bg-white rounded-[24px] p-8 shadow-sm border border-slate-100 flex flex-col items-center">
+        <h2 className="text-3xl font-black text-[#111111] mb-2 tracking-tight w-full">Enter OTP</h2>
+        <p className="text-slate-500 font-medium text-sm mb-10 w-full">Please enter the 6-digit code sent to your email.</p>
+
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="flex justify-between gap-2 sm:gap-3 mb-10">
+            {code.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => { inputRefs.current[index] = el; }}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold bg-[#FBF9F1] border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4FF00] focus:ring-2 focus:ring-[#D4FF00]/20 transition-all placeholder:text-slate-400"
+              />
+            ))}
+          </div>
+
+          <div className="flex justify-center mb-10">
+            <button 
+              type="button" 
+              disabled={timer > 0}
+              className={`flex items-center gap-2 text-sm font-semibold transition-colors ${timer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-[#0052FF] hover:text-blue-700'}`}
+            >
+              <RefreshCw className={`w-4 h-4 ${timer === 0 ? '' : 'animate-spin-slow'}`} />
+              Resend code {timer > 0 ? `in 00:${timer.toString().padStart(2, '0')}` : ''}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#D4FF00] hover:bg-[#c8f200] text-[#111111] font-black text-sm py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm mb-6"
+          >
+            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Verify →'}
+          </button>
+
+          <div className="text-center">
+            <Link href="/auth/login" className="text-sm font-bold text-[#0052FF] hover:underline">
+              Back to login
+            </Link>
+          </div>
+        </form>
       </div>
-
-      <h1 className="text-2xl font-black text-white mb-2">Check your inbox</h1>
-      <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
-        Enter the {OTP_LENGTH}-digit code sent to <br/>
-        <span className="text-white font-bold">{email}</span>
-      </p>
-
-      {error && (
-         <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-center justify-center gap-2 text-red-400 text-sm font-medium">
-           <AlertCircle size={16} /> {error}
-         </div>
-      )}
-
-      <div className="flex justify-center gap-2 mb-8">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            ref={el => { inputRefs.current[index] = el }}
-            type="text"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onPaste={handlePaste}
-            className={`
-              ${OTP_LENGTH > 6 ? 'w-10 h-12 text-lg' : 'w-12 h-14 text-xl'} 
-              bg-[#050505] border ${digit ? 'border-emerald-500' : 'border-white/10'} 
-              rounded-xl text-center font-bold text-white 
-              focus:border-emerald-500 outline-none transition-all 
-              focus:scale-110 shadow-lg
-            `}
-          />
-        ))}
-      </div>
-
-      <button 
-        onClick={handleVerify}
-        disabled={loading || otp.some(d => d === '')}
-        className="w-full bg-emerald-500 text-black font-extrabold py-4 rounded-xl hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Verify Code'}
-      </button>
-
-      <div className="mt-6">
-        <p className="text-xs text-zinc-500 mb-2">Didn't receive code?</p>
-        <button 
-          onClick={handleResend} 
-          disabled={resending}
-          className="text-emerald-500 font-bold hover:underline transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mx-auto"
-        >
-          {resending ? <Loader2 className="animate-spin" size={14} /> : 'Resend Email'}
-        </button>
-      </div>
-
-      <div className="mt-8 pt-6 border-t border-white/10">
-        <Link href="/auth/login" className="text-zinc-400 hover:text-white text-sm flex items-center justify-center gap-2 font-medium transition-colors">
-           <ArrowLeft size={16} /> Back to Log In
-        </Link>
-      </div>
-    </div>
+    </AuthPageWrapper>
   );
 }
 
-// 2. Main Export with Suspense Wrapper
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-      <Suspense fallback={
-        <div className="flex flex-col items-center gap-4 text-zinc-500">
-          <Loader2 className="animate-spin" size={32} />
-          <p className="text-sm font-medium">Verifying environment...</p>
-        </div>
-      }>
-        <VerifyEmailForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="min-h-screen bg-[#FBF9F1] flex items-center justify-center"><Loader2 className="animate-spin text-[#0052FF]" /></div>}>
+      <VerifyEmailForm />
+    </Suspense>
   );
 }

@@ -9,7 +9,7 @@ export default function SecurityPage() {
     <div className="min-h-screen bg-[#050505] text-white">
       <Navbar />
       <main className="pt-40 pb-20 px-6 text-center max-w-3xl mx-auto">
-        <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
            <ShieldCheck size={32} />
         </div>
         <h1 className="text-4xl font-black mb-6">Institutional-Grade Security</h1>

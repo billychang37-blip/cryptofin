@@ -1,3 +1,4 @@
+'use client';
 "use client";
 import React, { useRef, useEffect } from 'react';
 
@@ -36,7 +37,7 @@ export function ParticleNetwork() {
         this.vy = (Math.random() - 0.5) * 1.5;
         this.size = Math.random() * 2.5 + 1; // Bigger dots
         // High contrast colors
-        this.baseColor = Math.random() > 0.4 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(16, 185, 129, 0.9)';
+        this.baseColor = Math.random() > 0.4 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 98, 229, 0.9)';
       }
 
       update() {
@@ -104,7 +105,7 @@ export function ParticleNetwork() {
             
             if (mouseToLinkDist < 100) {
                  // Active Line (Green & Thick)
-                 ctx.strokeStyle = `rgba(16, 185, 129, ${opacity})`;
+                 ctx.strokeStyle = `rgba(0, 98, 229, ${opacity})`;
                  ctx.lineWidth = 1.5;
             } else {
                  // Passive Line (White & Thin)

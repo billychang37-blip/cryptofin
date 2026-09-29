@@ -32,30 +32,12 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
   const router = useRouter();
 
-  // IDLE TIMER LOGIC
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const IDLE_LIMIT = 5 * 60 * 1000; // 5 Minutes
 
-  const resetIdleTimer = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (!requiresSetup) {
-      timeoutRef.current = setTimeout(() => {
-        setIsLocked(true);
-      }, IDLE_LIMIT);
-    }
-  };
-
-  useEffect(() => {
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    const handleActivity = () => resetIdleTimer();
-    events.forEach(e => window.addEventListener(e, handleActivity));
-    resetIdleTimer();
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      events.forEach(e => window.removeEventListener(e, handleActivity));
-    };
-  }, [requiresSetup]);
-
+  // We are removing the automatic 5-minute idle timer because it aggressively
+  // locks the user out when they don't want to be locked. 
+  // Users can still be locked out manually if the `lock()` function is called.
+  
   // INITIAL CHECK
   useEffect(() => {
     const checkSecurity = async () => {
@@ -72,7 +54,7 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
         // 🛑 THE LOOP BREAKER
         // We query 'id' because user_security is linked 1:1 with auth.users
         const { data, error } = await supabase
-          .from('user_security')
+          .from('profiles')
           .select('pin_hash')
           .eq('id', user.id) // ✅ Matches the Primary Key 'id'
           .maybeSingle();
@@ -111,7 +93,6 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (data.success) {
             setIsLocked(false);
-            resetIdleTimer();
             return true;
         }
     } catch (e) {
@@ -128,3 +109,4 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
     </SecurityContext.Provider>
   );
 }
+

@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
         /* STATE 1: INPUT FORM */
         <>
           <div className="text-center mb-8">
-             <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-500 border border-emerald-500/20">
+             <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary border border-primary/20">
                <Mail size={24} />
              </div>
              <h1 className="text-2xl font-black text-white mb-2">Forgot Password?</h1>
@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-zinc-700"
+                className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-primary outline-none transition-colors placeholder:text-zinc-700"
                 placeholder="name@example.com"
                 required
               />
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
 
             <button 
               disabled={loading}
-              className="w-full bg-emerald-500 text-black font-extrabold py-4 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
+              className="w-full bg-primary text-black font-extrabold py-4 rounded-xl hover:bg-primary-hover transition-all flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : 'Send Reset Link'}
             </button>
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
       ) : (
         /* STATE 2: SUCCESS CONFIRMATION */
         <div className="text-center py-4">
-           <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 animate-in zoom-in duration-300">
+           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary animate-in zoom-in duration-300">
              <CheckCircle size={32} />
            </div>
            <h1 className="text-2xl font-black text-white mb-2">Check your mail</h1>
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
            </p>
            
            <p className="text-xs text-zinc-500">
-             Did not receive the email? <button onClick={() => { setIsSent(false); setError(''); }} className="text-emerald-500 font-bold hover:underline">Try again</button>
+             Did not receive the email? <button onClick={() => { setIsSent(false); setError(''); }} className="text-primary font-bold hover:underline">Try again</button>
            </p>
         </div>
       )}

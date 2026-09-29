@@ -79,7 +79,7 @@ export default function RescuePage() {
 
         {decryptedKey && (
           <div className="mt-8">
-            <label className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2 block ml-1">
+            <label className="text-xs font-bold text-primary uppercase tracking-widest mb-2 block ml-1">
               Raw Private Key
             </label>
             <div className="relative group">
@@ -87,11 +87,11 @@ export default function RescuePage() {
                 type="text"
                 readOnly
                 value={decryptedKey}
-                className="w-full bg-black border border-emerald-500/30 rounded-2xl py-4 pl-4 pr-12 text-emerald-400 outline-none font-mono text-sm"
+                className="w-full bg-black border border-primary/30 rounded-2xl py-4 pl-4 pr-12 text-primary outline-none font-mono text-sm"
               />
               <button
                 onClick={copyToClipboard}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-black rounded-xl"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary/10 text-primary hover:bg-primary hover:text-black rounded-xl"
               >
                 <Copy size={16} />
               </button>

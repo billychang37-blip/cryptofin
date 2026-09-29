@@ -106,7 +106,7 @@ export function WalletModal({ onSuccess }: WalletModalProps) {
     <div className="flex gap-4 justify-center mb-8">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 ${
-            i < value.length ? 'bg-emerald-500 scale-110 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-800 border border-white/5'
+            i < value.length ? 'bg-primary scale-110 shadow-[0_0_10px_rgba(0, 98, 229,0.5)]' : 'bg-zinc-800 border border-white/5'
         }`} />
       ))}
     </div>
@@ -117,12 +117,12 @@ export function WalletModal({ onSuccess }: WalletModalProps) {
       <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-sm rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
         
         {/* Glow Effect */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[50px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none" />
 
         {/* --- STEP 1: INTRO --- */}
         {step === 'intro' && (
           <div className="text-center py-4">
-            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20 text-emerald-500 animate-pulse">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary/20 text-primary animate-pulse">
               <Shield size={40} />
             </div>
             <h2 className="text-2xl font-bold text-white mb-3">Secure Your Account</h2>
@@ -131,7 +131,7 @@ export function WalletModal({ onSuccess }: WalletModalProps) {
             </p>
             <button 
               onClick={() => setStep('create')}
-              className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-emerald-400 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 shadow-lg"
+              className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-primary-hover hover:scale-[1.02] transition-all flex items-center justify-center gap-2 shadow-lg"
             >
               Start Setup <ArrowRight size={18} />
             </button>
@@ -176,7 +176,7 @@ export function WalletModal({ onSuccess }: WalletModalProps) {
         {/* --- STEP 4: GENERATING --- */}
         {step === 'generating' && (
           <div className="text-center py-12">
-             <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mx-auto mb-6" />
+             <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto mb-6" />
              <h3 className="text-lg font-bold text-white">Securing Wallet...</h3>
              <p className="text-zinc-500 text-xs mt-2">Encrypting keys on server.</p>
           </div>

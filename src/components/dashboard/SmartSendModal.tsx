@@ -28,6 +28,13 @@ const NETWORKS: Record<string, { name: string; short: string; fee: number; time:
   ],
   SOL: [{ name: 'Solana', short: 'SOL', fee: 0.000005, time: '~5s' }],
   TRX: [{ name: 'Tron (TRC20)', short: 'TRC20', fee: 1.0, time: '~1m' }],
+  BNB: [{ name: 'BNB Smart Chain', short: 'BEP20', fee: 0.0005, time: '~3s' }],
+  MATIC: [{ name: 'Polygon', short: 'POL', fee: 0.01, time: '~2s' }],
+  AVAX: [{ name: 'Avalanche C-Chain', short: 'AVAX', fee: 0.005, time: '~2s' }],
+  USDC: [
+    { name: 'Ethereum (ERC20)', short: 'ERC20', fee: 10.0, time: '~5m' },
+    { name: 'Polygon', short: 'POL', fee: 0.5, time: '~2m' }
+  ],
 };
 
 export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSendModalProps) {
@@ -161,7 +168,11 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
       const balanceField = asset === 'BTC' ? 'btc_balance' : 
                            asset === 'USDT' ? 'usdt_balance' : 
                            asset === 'SOL' ? 'sol_balance' : 
-                           asset === 'TRX' ? 'trx_balance' : 'balance';
+                           asset === 'TRX' ? 'trx_balance' : 
+                           asset === 'BNB' ? 'bnb_balance' :
+                           asset === 'MATIC' ? 'matic_balance' :
+                           asset === 'AVAX' ? 'avax_balance' :
+                           asset === 'USDC' ? 'usdc_balance' : 'balance';
 
       if (asset !== 'ETH') {
           const { data: wAsset } = await supabase.from('wallets').select(balanceField).eq('user_id', user.id).single();
@@ -229,7 +240,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                            <span className="text-xs font-bold">Insufficient ETH for network fees</span>
                         </div>
                         <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
-                           <Wifi size={10} className={ethBalance >= 3.0 ? "text-emerald-500" : "text-red-500"} />
+                           <Wifi size={10} className={ethBalance >= 3.0 ? "text-primary" : "text-red-500"} />
                            <span>ETH Balance: {ethBalance.toFixed(4)}</span>
                         </div>
                     </div>
@@ -246,7 +257,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                    <span className="text-amber-500 text-xs font-bold bg-amber-500/10 px-3 py-1 rounded-full animate-pulse">Insufficient ETH for Gas</span>
                 ) : (
                    <span className={`text-xs font-medium cursor-pointer ${subTextColor}`} onClick={handleMax}>
-                      Available: {balance.toFixed(4)} {asset} <span className="text-emerald-500 font-bold ml-1">MAX</span>
+                      Available: {balance.toFixed(4)} {asset} <span className="text-primary font-bold ml-1">MAX</span>
                    </span>
                 )}
               </div>
@@ -255,7 +266,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                 <div className={`p-4 flex items-center gap-3 border-b ${borderColor}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}><Wallet size={16} className={subTextColor} /></div>
                   <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Paste Address" className="flex-1 bg-transparent outline-none text-sm font-medium font-mono text-black dark:text-white"/>
-                  {!address && <button onClick={handlePaste} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2.5 py-1.5 rounded-lg">PASTE</button>}
+                  {!address && <button onClick={handlePaste} className="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg">PASTE</button>}
                 </div>
                 <button onClick={() => setView('networks')} className={`w-full p-4 flex items-center justify-between transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
                   <div className="flex items-center gap-3">
@@ -270,7 +281,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
               </div>
             </div>
             <div className="p-6 pt-2">
-               <button onClick={() => setView('review')} disabled={!canProceed} className={`w-full py-4 rounded-xl font-bold transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 ${canProceed ? 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}>
+               <button onClick={() => setView('review')} disabled={!canProceed} className={`w-full py-4 rounded-xl font-bold transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 ${canProceed ? 'bg-primary text-white hover:bg-primary-hover shadow-primary/20' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}>
                   {isGasLoading ? <Loader2 className="animate-spin" size={20} /> : 'Continue'}
                </button>
             </div>
@@ -285,12 +296,12 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
               </div>
               <div className="flex-1 p-4 overflow-y-auto space-y-2">
                  {NETWORKS[asset]?.map((net) => (
-                    <button key={net.name} onClick={() => { setSelectedNetwork(net); setView('form'); }} className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${selectedNetwork.name === net.name ? 'border-emerald-500 bg-emerald-500/10' : `${borderColor} hover:bg-white/5`}`}>
+                    <button key={net.name} onClick={() => { setSelectedNetwork(net); setView('form'); }} className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${selectedNetwork.name === net.name ? 'border-primary bg-primary/10' : `${borderColor} hover:bg-white/5`}`}>
                        <div>
                           <div className="font-bold text-sm">{net.name}</div>
                           <div className={`text-xs mt-1 ${subTextColor}`}>Time: {net.time}</div>
                        </div>
-                       {selectedNetwork.name === net.name && <Check size={18} className="text-emerald-500" />}
+                       {selectedNetwork.name === net.name && <Check size={18} className="text-primary" />}
                     </button>
                  ))}
               </div>
@@ -344,7 +355,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                  <button 
                     onClick={handleSend}
                     disabled={loading}
-                    className="w-full py-4 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-400 disabled:opacity-70 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl font-bold bg-primary text-white hover:bg-primary-hover disabled:opacity-70 transition-all active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                  >
                     {loading ? <Loader2 className="animate-spin" /> : 'Confirm & Send'}
                  </button>
@@ -361,7 +372,7 @@ function ReviewRow({ label, value, truncate, highlight }: any) {
    return (
       <div className="flex justify-between items-center p-4">
          <span className={`text-sm font-medium ${theme === 'dark' ? 'text-zinc-500' : 'text-slate-500'}`}>{label}</span>
-         <span className={`text-sm font-bold font-mono ${highlight ? 'text-emerald-500' : (theme === 'dark' ? 'text-white' : 'text-slate-900')} ${truncate ? 'truncate max-w-[150px]' : ''}`}>{value}</span>
+         <span className={`text-sm font-bold font-mono ${highlight ? 'text-primary' : (theme === 'dark' ? 'text-white' : 'text-slate-900')} ${truncate ? 'truncate max-w-[150px]' : ''}`}>{value}</span>
       </div>
    );
 }

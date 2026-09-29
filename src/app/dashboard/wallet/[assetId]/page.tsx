@@ -1,313 +1,214 @@
 "use client";
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
-import { 
-  ArrowLeft, Send, QrCode, RefreshCw, 
-  ArrowDownLeft, ArrowUpRight, Loader2, History, XCircle 
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { ChevronLeft, LineChart, ArrowUpRight, ArrowDownLeft, Link2, Database, Coins } from 'lucide-react';
 import { CRYPTO_ASSETS } from '@/lib/constants';
-import { SmartSendModal } from '@/components/dashboard/SmartSendModal';
-import { ReceiveModal } from '@/components/dashboard/ReceiveModal';
-import { SwapModal } from '@/components/dashboard/SwapModal';
-import { TransactionReceipt } from '@/components/dashboard/TransactionReceipt';
+import { createClient } from '@/lib/supabase';
 import { AssetIcon } from '@/components/dashboard/AssetIcon';
-import { useTheme } from '@/context/ThemeContext'; 
-import { toast } from 'sonner';
+import { SendModal } from '@/components/dashboard/SendModal';
 
-export default function AssetDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const supabase = createClient();
-  const { theme } = useTheme();
-  
-  const assetId = typeof params.assetId === 'string' ? params.assetId.toUpperCase() : 'ETH';
-  const assetConfig = CRYPTO_ASSETS.find(a => a.id === assetId);
+export default function IndividualWalletPage() {
+   const router = useRouter();
+   const params = useParams();
+   const assetId = (params?.assetId as string) || 'ETH';
+   
+   const supabase = createClient();
+   const [wallet, setWallet] = useState<any>(null);
+   const [price, setPrice] = useState<number>(0);
+   const [showSend, setShowSend] = useState(false);
+   const [showChart, setShowChart] = useState(false);
+   const [transactions, setTransactions] = useState<any[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [wallet, setWallet] = useState<any>(null);
-  const [price, setPrice] = useState(0);
-  const [change24h, setChange24h] = useState(0);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  
-  const [action, setAction] = useState<'send' | 'receive' | 'swap' | null>(null);
-  const [selectedTx, setSelectedTx] = useState<any>(null); 
+   const assetMeta = CRYPTO_ASSETS.find(a => a.id === assetId) || CRYPTO_ASSETS[1]; // default ETH
 
-  const fallbackPrices: Record<string, number> = {
-    BTC: 65000, ETH: 2950, USDT: 1.00, SOL: 145, TRX: 0.15
-  };
-
-  const fetchData = useCallback(async () => {
-    try {
+   const fetchWallet = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (user) {
+         const { data } = await supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle();
+         if (data) setWallet(data);
 
-      // 1. Fetch Wallet (Single Row)
-      const { data: w } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (w) setWallet(w);
-
-      // 2. Fetch Price (CoinGecko)
-      const coinIdMap: any = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'USDT': 'tether', 'SOL': 'solana', 'TRX': 'tron' };
-      try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIdMap[assetId]}&vs_currencies=usd&include_24hr_change=true`);
-        if (!res.ok) throw new Error("Limit");
-        const p = await res.json();
-        const coinData = p[coinIdMap[assetId]];
-        setPrice(coinData?.usd || 0);
-        setChange24h(coinData?.usd_24h_change || 0);
-      } catch (e) {
-         setPrice(fallbackPrices[assetId] || 0);
+         // Fetch transactions for this exact asset to prevent clashing
+         const { data: txs } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('currency', assetId)
+            .order('created_at', { ascending: false });
+         if (txs) setTransactions(txs);
       }
+   };
 
-      // 3. Fetch Transactions (OPTIMIZED: Filtered in Database)
-      // We explicitly ask for transactions where currency == assetId
-      const { data: txs } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('currency', assetId) // ✅ Database-side filtering
-        .order('created_at', { ascending: false })
-        .limit(50); // Pagination safety
+   useEffect(() => {
+      fetchWallet();
+   }, []);
 
-      if (txs) setTransactions(txs);
-
-    } catch (error) {
-      console.error("Sync failed:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [assetId, supabase]);
-
-  // INITIAL LOAD & REALTIME
-  useEffect(() => {
-    if(!assetConfig) { router.push('/dashboard/wallet'); return; }
-    
-    fetchData(); 
-
-    // Listen for NEW transactions for THIS asset only
-    const channel = supabase
-      .channel(`asset_updates_${assetId}`)
-      .on('postgres_changes', { 
-         event: '*', 
-         schema: 'public', 
-         table: 'transactions',
-         filter: `currency=eq.${assetId}` // ✅ Only listen for relevant updates
-      }, (payload: any) => {
-         fetchData();
-         
-         // Toast Logic
-         if (payload.eventType === 'UPDATE' && payload.new.status !== payload.old.status) {
-            const newStatus = payload.new.status;
-            if (newStatus === 'completed') toast.success("Transaction Confirmed!");
-            if (newStatus === 'failed') toast.error("Transaction failed");
+   useEffect(() => {
+      const fetchPrice = async () => {
+         if (assetId.includes('USD')) {
+            setPrice(1);
+            return;
          }
-      })
-      .subscribe();
+         try {
+            const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tron,binancecoin,polygon-ecosystem-token,avalanche-2&vs_currencies=usd`);
+            const data = await res.json();
+            const map: any = {
+               'ETH': data.ethereum?.usd, 'BTC': data.bitcoin?.usd, 'SOL': data.solana?.usd,
+               'TRX': data.tron?.usd, 'BNB': data.binancecoin?.usd, 'MATIC': data['polygon-ecosystem-token']?.usd,
+               'AVAX': data['avalanche-2']?.usd
+            };
+            setPrice(map[assetId.split('_')[0]] || 0);
+         } catch (e) { }
+      };
+      fetchPrice();
+   }, [assetId]);
 
-    return () => { supabase.removeChannel(channel); };
-  }, [assetId, fetchData, supabase]);
+   const getBalance = () => {
+      if (!wallet) return 0;
+      const map: Record<string, number> = {
+         'BTC': wallet.btc_balance, 'ETH': wallet.balance, 'USDT': wallet.usdt_balance,
+         'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance, 'BNB': wallet.bnb_balance, 
+         'MATIC': wallet.matic_balance, 'AVAX': wallet.avax_balance, 'USDC': wallet.usdc_balance
+      };
+      return map[assetId] || 0;
+   };
 
-  const getBalance = () => {
-    if (!wallet) return 0;
-    // ✅ Maps strictly to the DB columns we created
-    const map: Record<string, number> = {
-      'BTC': wallet.btc_balance, 
-      'ETH': wallet.balance, // Main column is ETH
-      'USDT': wallet.usdt_balance,
-      'SOL': wallet.sol_balance, 
-      'TRX': wallet.trx_balance
-    };
-    return map[assetId] || 0;
-  };
+   const balance = getBalance();
 
-  const balance = getBalance();
-  const usdValue = balance * price;
-  const isDark = theme === 'dark';
+   return (
+      <div className="flex-1 bg-transparent text-white">
+         <div className="w-full max-w-4xl mx-auto flex flex-col h-full">
+            <div className="px-5 pt-6 pb-4 w-full">
+               <button onClick={() => router.back()} className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors">
+                  <ChevronLeft size={20} />
+                  <span className="font-medium text-sm">back</span>
+               </button>
+            </div>
 
-  if (loading || !assetConfig) return (
-    <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#050505]' : 'bg-[#F3F4F6]'}`}>
-       <Loader2 className="animate-spin text-emerald-500" size={32} />
-    </div>
-  );
+            <div className="bg-[#1e1e1e] w-full flex flex-col items-center pt-8 pb-8 border-b border-[#121212]">
+               <div className="w-12 h-12 mb-4">
+                  <AssetIcon symbol={assetId.split('_')[0]} size="lg" />
+               </div>
+               
+               <h1 className="text-[32px] font-bold tracking-tight text-white mb-2">
+                  {balance > 0 ? balance.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0.000000'} <span className="text-[16px] font-medium tracking-normal text-white">{assetId}</span>
+               </h1>
+               
+               <div className="flex items-center gap-2 text-sm font-bold text-[#10b981] tracking-tight">
+                  <span>${balance > 0 ? (balance * price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                  <span className="text-neutral-500 font-medium">|</span>
+                  <span className="text-white">${price.toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</span>
+               </div>
 
-  return (
-    <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 pb-32 animate-in fade-in duration-500">
-      
-      {/* --- MODAL MANAGER --- */}
-      {action === 'receive' && (
-        <ReceiveModal asset={assetId} userAddress={wallet.address} onClose={() => setAction(null)} />
-      )}
-      
-      {action === 'send' && (
-        <SmartSendModal 
-          asset={assetId} 
-          balance={balance} 
-          onClose={() => setAction(null)} 
-          onSuccess={() => { 
-             fetchData();
-             setAction(null);
-          }} 
-        />
-      )}
+               <div className="flex items-center justify-around w-full px-4 md:px-16 mt-10">
+                  <div className="flex flex-col items-center gap-3">
+                     <button onClick={() => router.push(`/dashboard/wallet/${assetId}/send`)} className="w-12 h-12 rounded-full bg-[#111111] border border-white/5 flex items-center justify-center text-white hover:bg-[#252525] transition shadow-lg">
+                        <ArrowUpRight size={18} strokeWidth={1.5} />
+                     </button>
+                     <span className="text-xs font-medium text-white">Send</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-3">
+                     <button onClick={() => router.push(`/dashboard/wallet/${assetId}/receive`)} className="w-12 h-12 rounded-full bg-[#111111] border border-white/5 flex items-center justify-center text-white hover:bg-[#252525] transition shadow-lg">
+                        <ArrowDownLeft size={18} strokeWidth={1.5} />
+                     </button>
+                     <span className="text-xs font-medium text-white">Receive</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-3">
+                     <button className="w-12 h-12 rounded-full bg-[#111111] border border-white/5 flex items-center justify-center text-white hover:bg-[#252525] transition shadow-lg">
+                        <Link2 size={18} strokeWidth={1.5} />
+                     </button>
+                     <span className="text-xs font-medium text-white">Buy</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-3">
+                     <button onClick={() => setShowChart(true)} className="w-12 h-12 rounded-full bg-[#111111] border border-white/5 flex items-center justify-center text-white hover:bg-[#252525] transition shadow-lg">
+                        <LineChart size={18} strokeWidth={1.5} />
+                     </button>
+                     <span className="text-xs font-medium text-white">Chart</span>
+                  </div>
+               </div>
+            </div>
 
-      {action === 'swap' && (
-        <SwapModal 
-          initialAsset={assetId} 
-          onClose={() => setAction(null)} 
-          onSuccess={() => {
-             fetchData();
-          }} 
-        />
-      )}
-
-      {selectedTx && (
-        <TransactionReceipt tx={selectedTx} onClose={() => setSelectedTx(null)} />
-      )}
-
-      {/* HEADER */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className={`p-2 rounded-full border transition-transform active:scale-95 ${isDark ? 'bg-zinc-900 border-white/5 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'}`}>
-           <ArrowLeft size={18} />
-        </button>
-        <span className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-           {assetConfig.name} Wallet
-        </span>
-      </div>
-
-      {/* HERO SECTION */}
-      <div className="w-full text-center mb-10">
-         <div className="mx-auto mb-3 flex justify-center">
-            <AssetIcon symbol={assetId} size="lg" className="drop-shadow-2xl" />
-         </div>
-         <div className="mb-6">
-            <h1 className={`text-4xl md:text-5xl font-bold tracking-tight mb-1 break-words ${isDark ? 'text-white' : 'text-slate-900'}`}>
-               {usdValue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-            </h1>
-            <div className="flex items-center justify-center gap-2">
-               <p className="text-zinc-500 font-mono text-sm font-medium">
-                  {balance.toFixed(6)} {assetId}
-               </p>
-               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${change24h >= 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
-                  {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
-               </span>
+            <div className="bg-[#1e1e1e] w-full mb-8 flex flex-col">
+               <div className="p-4 flex items-center gap-1.5 text-[#10b981] font-bold text-[13px] tracking-tight border-b border-[#121212]">
+                  <Coins size={15} className="text-[#fbbf24] fill-[#fbbf24]" />
+                  Transaction
+               </div>
+               
+               <div className="px-4 py-4 text-[13px] font-medium text-neutral-600">
+                  {transactions.length === 0 ? (
+                     "No Record Found!"
+                  ) : (
+                     <div className="flex flex-col gap-2">
+                        {transactions.map(tx => {
+                           const isDeposit = tx.amount > 0 || tx.type === 'deposit';
+                           const isInternal = tx.metadata?.method === 'internal';
+                           const absAmount = Math.abs(tx.amount);
+                           const title = isInternal ? (isDeposit ? 'Internal Receipt' : 'Internal Transfer') : (isDeposit ? 'Received' : 'Sent');
+                           
+                           return (
+                              <div 
+                                 key={tx.id} 
+                                 onClick={() => router.push(`/dashboard/transactions/${tx.id}`)}
+                                 className="flex items-center justify-between p-3.5 bg-[#141414] hover:bg-[#1a1a1a] cursor-pointer rounded-xl border border-white/[0.03] transition-colors"
+                              >
+                                 <div className="flex items-center gap-3.5">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDeposit ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-white/5 text-neutral-300'}`}>
+                                       {isDeposit ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                       <div className="text-white font-medium text-[14.5px] tracking-tight">{title}</div>
+                                       <div className="text-[12px] text-neutral-500 font-medium">
+                                          {new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(tx.created_at))}
+                                       </div>
+                                    </div>
+                                 </div>
+                                 <div className="text-right flex flex-col gap-0.5">
+                                    <div className={`font-bold text-[14.5px] tracking-tight ${isDeposit ? 'text-[#10b981]' : 'text-white'}`}>
+                                       {isDeposit ? '+' : '-'}{absAmount} {tx.currency}
+                                    </div>
+                                    <div className={`text-[12px] font-medium ${tx.status === 'completed' || tx.status === 'confirmed' ? 'text-[#10b981]' : tx.status === 'failed' ? 'text-red-400' : 'text-yellow-500'}`}>
+                                       {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                                    </div>
+                                 </div>
+                              </div>
+                           );
+                        })}
+                     </div>
+                  )}
+               </div>
             </div>
          </div>
-         <div className="flex items-center justify-center gap-4">
-            <ActionButton icon={Send} label="Send" onClick={() => setAction('send')} />
-            <ActionButton icon={QrCode} label="Receive" onClick={() => setAction('receive')} />
-            <ActionButton icon={RefreshCw} label="Swap" onClick={() => setAction('swap')} />
-         </div>
-      </div>
-
-      {/* ACTIVITY LIST */}
-      <div className="w-full max-w-2xl mx-auto">
-         <div className="flex justify-between items-center px-4 mb-3">
-            <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Transaction History</span>
-         </div>
-         
-         <div className={`w-full rounded-3xl overflow-hidden border min-h-[200px] ${isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
-            {transactions.length > 0 ? (
-               <div className={`divide-y ${isDark ? 'divide-white/5' : 'divide-slate-100'}`}>
-                  {transactions.map((tx) => {
-                     const isDeposit = tx.type === 'deposit';
-                     const isSwap = tx.type === 'swap'; 
-                     const isFailed = tx.status === 'failed';
-                     const smartDate = formatListDate(tx.created_at);
-
-                     return (
-                        <button 
-                           key={tx.id} 
-                           onClick={() => setSelectedTx(tx)}
-                           className={`w-full text-left p-4 flex items-center justify-between transition-colors group
-                             ${isDark ? 'hover:bg-white/[0.03] active:bg-white/[0.05]' : 'hover:bg-slate-50 active:bg-slate-100'}
-                           `}
-                        >
-                           {/* LEFT: ICON + DETAILS */}
-                           <div className="flex items-center gap-4 overflow-hidden">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors
-                                 ${isFailed ? 'bg-red-500/10 text-red-500' : 
-                                   isSwap ? 'bg-purple-500/10 text-purple-500' :
-                                   isDeposit ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-500/10 text-zinc-500'}
-                              `}>
-                                 {isFailed ? <XCircle size={20} /> : 
-                                  isSwap ? <RefreshCw size={18} /> : 
-                                  isDeposit ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
-                              </div>
-                              <div className="min-w-0 flex flex-col">
-                                 <span className={`font-semibold text-sm capitalize truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                    {isSwap ? 'Swap' : isDeposit ? 'Received' : 'Sent'} {tx.currency}
-                                 </span>
-                                 <span className="text-xs text-zinc-500 truncate font-medium">
-                                    {smartDate} • {tx.status}
-                                 </span>
-                              </div>
-                           </div>
-
-                           {/* RIGHT: AMOUNT */}
-                           <div className="text-right shrink-0">
-                              <div className={`font-mono text-sm font-bold tracking-tight
-                                 ${isFailed ? 'text-zinc-500 line-through' : 
-                                   isDeposit ? 'text-emerald-500' : (isDark ? 'text-white' : 'text-slate-900')}
-                              `}>
-                                 {isDeposit ? '+' : ''}{tx.amount}
-                              </div>
-                           </div>
-                        </button>
-                     );
-                  })}
-               </div>
-            ) : (
-               <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-zinc-900' : 'bg-slate-50'}`}>
-                     <History size={24} className="text-zinc-400" />
+         {/* MODALS */}
+         {showChart && (
+            <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4">
+               <div className="w-full max-w-4xl bg-[#131722] rounded-xl overflow-hidden border border-white/10 shadow-2xl relative animate-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between p-3 border-b border-white/10">
+                     <div className="text-white font-medium text-sm flex items-center gap-2">
+                        <ChevronLeft className="w-4 h-4 cursor-pointer" onClick={() => setShowChart(false)} />
+                        {assetMeta.name} / USD
+                     </div>
+                     <button onClick={() => setShowChart(false)} className="text-neutral-400 hover:text-white transition">
+                        ✕
+                     </button>
                   </div>
-                  <h3 className={`text-sm font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>No transactions</h3>
-                  <p className="text-xs text-zinc-500">Activity will appear here once you transact.</p>
+                  <div className="h-[500px] w-full">
+                     <iframe 
+                        src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_1&symbol=BINANCE:${assetId}USDT&interval=D&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en`} 
+                        className="w-full h-full"
+                        frameBorder="0"
+                     ></iframe>
+                  </div>
                </div>
-            )}
-         </div>
+            </div>
+         )}
+
+         {showSend && (
+            <SendModal 
+               wallet={wallet} 
+               prices={{ [assetId.split('_')[0]]: price }}
+               onClose={() => setShowSend(false)} 
+               onSuccess={async () => { setShowSend(false); await fetchWallet(); }}
+            />
+         )}
       </div>
-
-    </div>
-  );
-}
-
-function ActionButton({ icon: Icon, label, onClick }: any) {
-   const { theme } = useTheme();
-   return (
-      <button onClick={onClick} className="flex flex-col items-center gap-2 group">
-         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm active:scale-95
-            ${theme === 'dark' 
-               ? 'bg-zinc-800 text-white hover:bg-emerald-600' 
-               : 'bg-white text-slate-700 hover:bg-emerald-500 hover:text-white border border-slate-200'
-            }
-         `}>
-            <Icon size={20} />
-         </div>
-         <span className={`text-[11px] font-bold transition-colors ${theme === 'dark' ? 'text-zinc-500 group-hover:text-white' : 'text-slate-500 group-hover:text-slate-900'}`}>{label}</span>
-      </button>
    );
-}
-
-function formatListDate(dateString: string): string {
-  if (!dateString) return 'Unknown';
-  const date = new Date(dateString);
-  const now = new Date();
-  const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  
-  const d = new Date(date); d.setHours(0,0,0,0);
-  const n = new Date(now); n.setHours(0,0,0,0);
-  const diffTime = n.getTime() - d.getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return `Today, ${timeStr}`;
-  if (diffDays === 1) return `Yesterday, ${timeStr}`;
-  if (diffDays < 7) return `${date.toLocaleDateString('en-US', { weekday: 'short' })}, ${timeStr}`;
-  
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

@@ -21,21 +21,23 @@ export function AssetIcon({ symbol, size = 'md', className = '' }: AssetIconProp
 
   const currentSize = sizeClasses[size];
 
-  // We use the "cryptocurrency-icons" CDN which is the industry standard for high-res (128px) icons
-  // This ensures we get the EXACT color and shape used by Binance/Coinbase
-  const baseUrl = "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/128/color";
+  // Use high-resolution SVGs for maximum crispness
+  const baseUrl = "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color";
   
   // Handle edge cases where the symbol might differ in file names
   const iconMap: Record<string, string> = {
-    'btc': 'btc.png',
-    'eth': 'eth.png',
-    'usdt': 'usdt.png',
-    'sol': 'sol.png',
-    'trx': 'trx.png',
-    // Add more as needed: 'bnb': 'bnb.png', 'ltc': 'ltc.png'
+    'btc': 'btc.svg',
+    'eth': 'eth.svg',
+    'usdt': 'usdt.svg',
+    'sol': 'sol.svg',
+    'trx': 'trx.svg',
+    'bnb': 'bnb.svg',
+    'matic': 'matic.svg',
+    'avax': 'avax.svg',
+    'usdc': 'usdc.svg'
   };
 
-  const iconFile = iconMap[s] || 'btc.png'; // Default to BTC if unknown (safety)
+  const iconFile = iconMap[s] || 'btc.svg'; // Default to BTC if unknown (safety)
 
   return (
     <div className={`relative ${currentSize} ${className} shrink-0`}>

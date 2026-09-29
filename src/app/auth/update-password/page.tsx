@@ -41,7 +41,7 @@ export default function UpdatePasswordPage() {
     <div className="bg-[#0a0a0a]/80 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       <div className="text-center mb-8">
-        <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-500 border border-emerald-500/20">
+        <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary border border-primary/20">
           <Lock size={24} />
         </div>
         <h1 className="text-2xl font-black text-white mb-2">Set New Password</h1>
@@ -61,7 +61,7 @@ export default function UpdatePasswordPage() {
               type={showPassword ? "text" : "password"} 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-emerald-500 outline-none transition-colors pr-12"
+              className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-primary outline-none transition-colors pr-12"
               placeholder="Min. 6 characters"
             />
             <button 
@@ -76,7 +76,7 @@ export default function UpdatePasswordPage() {
 
         <button 
           disabled={loading}
-          className="w-full bg-emerald-500 text-black font-extrabold py-4 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+          className="w-full bg-primary text-black font-extrabold py-4 rounded-xl hover:bg-primary-hover transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0, 98, 229,0.3)]"
         >
           {loading ? <Loader2 className="animate-spin" size={20} /> : 'Update Password'}
         </button>

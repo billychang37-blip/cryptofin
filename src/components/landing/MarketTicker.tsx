@@ -21,7 +21,7 @@ export function MarketTicker() {
           <div key={i} className="inline-flex items-center gap-3 mx-8 md:mx-12 group cursor-pointer">
             <span className="font-bold text-zinc-400 text-sm">{coin.symbol}</span>
             <span className="font-bold text-white text-sm">{coin.price}</span>
-            <span className={`text-xs font-bold flex items-center ${coin.up ? 'text-emerald-500' : 'text-red-500'}`}>
+            <span className={`text-xs font-bold flex items-center ${coin.up ? 'text-primary' : 'text-red-500'}`}>
               {coin.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
               {coin.change}
             </span>

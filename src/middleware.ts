@@ -81,7 +81,8 @@ export async function middleware(request: NextRequest) {
 
   // 4. Redirect Logged-In Users away from Auth Pages
   if (request.nextUrl.pathname.startsWith('/auth')) {
-    if (user) {
+    const isSetupRoute = request.nextUrl.pathname.includes('/recovery-phrase') || request.nextUrl.pathname.includes('/create-pin');
+    if (user && !isSetupRoute) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

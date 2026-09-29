@@ -34,7 +34,7 @@ export function LockScreen() {
     <div className="fixed inset-0 z-[9999] bg-[#050505]/95 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-300">
       <div className="w-full max-w-sm text-center">
         
-        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20 text-emerald-500">
+        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary/20 text-primary">
           {verifying ? <Loader2 className="animate-spin" size={32} /> : <Lock size={32} />}
         </div>
         
@@ -45,7 +45,7 @@ export function LockScreen() {
         <div className="flex gap-4 justify-center mb-10">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 ${
-              i < pin.length ? 'bg-emerald-500 scale-110 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-800 border border-white/5'
+              i < pin.length ? 'bg-primary scale-110 shadow-[0_0_10px_rgba(0, 98, 229,0.5)]' : 'bg-zinc-800 border border-white/5'
             }`} />
           ))}
         </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MobileNav } from '@/components/dashboard/MobileNav';
+import { TopNav } from '@/components/dashboard/TopNav';
 import { GlobalLoader } from '@/components/ui/GlobalLoader';
 import { LockScreen } from '@/components/security/LockScreen'; // ✅ IMPORT THIS
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
@@ -37,9 +38,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      setTimeout(() => {
-        setLoading(false);
-      }, 1500); 
+      setLoading(false);
     };
     checkUser();
   }, [router]);
@@ -52,23 +51,23 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${
       theme === 'dark' 
-        ? 'bg-[#050505] text-white' 
+        ? 'bg-[#121212] text-white' 
         : 'bg-[#F3F4F6] text-slate-900'
     }`}>
       
-      {/* ✅ SECURITY OVERLAY */}
-      {/* If isLocked is true, this sits on top of everything else */}
       {isLocked && <LockScreen />}
 
-      <Sidebar />
-
-      <main className="lg:ml-72 min-h-screen pb-24 lg:pb-0 animate-in fade-in duration-500">
-        <div className="max-w-6xl mx-auto w-full">
-           {children}
+      <main className="min-h-screen animate-in fade-in duration-500 flex flex-col">
+        <div className="w-full flex justify-center flex-1">
+           <div className="w-full max-w-5xl relative flex flex-col pb-[72px]">
+              <TopNav />
+              <div className="flex-1 flex flex-col h-full">
+                 {children}
+              </div>
+              <MobileNav />
+           </div>
         </div>
       </main>
-
-      <MobileNav />
       
     </div>
   );

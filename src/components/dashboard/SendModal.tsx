@@ -86,7 +86,7 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
                 value={toAddress}
                 onChange={(e) => setToAddress(e.target.value)}
                 placeholder="0x..."
-                className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-emerald-500 outline-none transition-colors font-mono"
+                className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-primary outline-none transition-colors font-mono"
                 required
               />
             </div>
@@ -100,7 +100,7 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-emerald-500 outline-none transition-colors"
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:border-primary outline-none transition-colors"
                   required
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-bold">ETH</span>
@@ -108,13 +108,13 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
               <p className="text-[10px] text-zinc-500 ml-1">Available: {balance.toFixed(4)} ETH</p>
             </div>
 
-            <button className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl hover:bg-emerald-400 transition-all mt-4 flex items-center justify-center gap-2 active:scale-[0.98]">
+            <button className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl hover:bg-primary-hover transition-all mt-4 flex items-center justify-center gap-2 active:scale-[0.98]">
               Next <ArrowRight size={16} />
             </button>
           </form>
         ) : (
           <div className="text-center animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-500">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
                <ShieldCheck size={24} />
             </div>
             <p className="text-zinc-400 text-sm mb-6">Confirm sending <strong className="text-white">{amount} ETH</strong></p>
@@ -126,7 +126,7 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
                  maxLength={4}
                  value={pin}
                  onChange={(e) => setPin(e.target.value)}
-                 className="w-32 bg-zinc-900 border border-white/20 text-white text-3xl font-bold tracking-[0.5em] text-center rounded-xl py-2 focus:border-emerald-500 outline-none"
+                 className="w-32 bg-zinc-900 border border-white/20 text-white text-3xl font-bold tracking-[0.5em] text-center rounded-xl py-2 focus:border-primary outline-none"
                />
             </div>
 
@@ -141,7 +141,7 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
               <button 
                 onClick={handleSend}
                 disabled={loading || pin.length < 4}
-                className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+                className="w-full bg-primary text-black font-bold py-3 rounded-xl hover:bg-primary-hover transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
               >
                 {loading ? <Loader2 className="animate-spin" size={18} /> : 'Confirm Send'}
               </button>

@@ -5,8 +5,8 @@
   --color-background: #050505;
   --color-foreground: #ededed;
   
-  --color-primary: #10b981;
-  --color-primary-hover: #059669;
+  --color-primary: #0062E5;
+  --color-primary-hover: #0052CC;
   
   --color-surface: #0f0f10;
   --color-surface-border: #27272a;
@@ -78,4 +78,54 @@ body {
   input, select, textarea {
     font-size: 16px !important; 
   }
+}
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #FBF9F1;
+  --color-surface: #FFFFFF;
+  --color-ink: #111111;
+  --color-muted: #555555;
+  --color-lime: #D4FF00;
+  --color-coral: #EE5D3B;
+  --color-sage: #E3EEBF;
+  --color-accent: #0052FF;
+
+  --font-sans: "Plus Jakarta Sans", -apple-system, sans-serif;
+  --font-serif: "Newsreader", "Instrument Serif", Georgia, serif;
+  --font-mono: "Space Mono", monospace;
+  --font-hand: "Caveat", cursive;
+}
+
+@layer base {
+  body {
+    background-color: #FBF9F1;
+    color: #111111;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+}
+
+/* Marquee animation */
+@keyframes shimmer {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FBF9F1;
+}
+::-webkit-scrollbar-thumb {
+  background: #DDD8CB;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4BDAE;
 }

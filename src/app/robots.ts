@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard/', '/admin/'], // ⚠️ Keep Dashboard & Admin PRIVATE from Google
     },
-    sitemap: 'https://corecoin.co/sitemap.xml',
+    sitemap: 'https://cryptofin.co/sitemap.xml',
   };
 }

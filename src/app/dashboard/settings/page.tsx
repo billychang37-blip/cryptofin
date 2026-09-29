@@ -40,9 +40,21 @@ export default function SettingsPage() {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .maybeSingle(); // Use maybeSingle to avoid errors if profile missing
+          .maybeSingle();
         
-        setProfile(prof);
+        // 3. Fetch KYC Status from kyc_applications
+        const { data: kyc } = await supabase
+          .from('kyc_applications')
+          .select('status')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (prof) {
+          prof.kyc_status = kyc?.status || 'unverified';
+          setProfile(prof);
+        } else {
+          setProfile({ kyc_status: kyc?.status || 'unverified' });
+        }
       }
       setLoading(false);
     };
@@ -92,17 +104,17 @@ export default function SettingsPage() {
       
       {/* 1. PROFILE CARD */}
       <div 
-        onClick={() => router.push('/dashboard/profile')}
+        onClick={() => router.push(profile?.kyc_status === 'approved' ? '/dashboard/profile' : '/dashboard/settings/kyc')}
         className={`relative border rounded-3xl p-6 flex items-center gap-4 mb-8 shadow-xl overflow-hidden cursor-pointer group transition-all
           ${isDark 
             ? 'bg-gradient-to-br from-zinc-900 to-black border-white/10 hover:border-white/20' 
-            : 'bg-white border-slate-200 hover:border-emerald-500/30'
+            : 'bg-white border-slate-200 hover:border-primary/30'
           }
         `}
       >
-        {isDark && <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />}
+        {isDark && <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />}
         
-        <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-emerald-500/20 shrink-0 overflow-hidden">
+        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-primary/20 shrink-0 overflow-hidden">
            {profile?.avatar_url ? (
              <img src={profile.avatar_url} alt="User" className="w-full h-full object-cover" />
            ) : (
@@ -114,17 +126,29 @@ export default function SettingsPage() {
            <h2 className={`font-bold text-lg truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
              {profile?.full_name || user?.email?.split('@')[0] || "User"}
            </h2>
-           <div className="flex items-center gap-2 mt-1">
+           <div className="flex flex-wrap items-center gap-2 mt-1">
              <span className={`text-xs font-mono px-2 py-0.5 rounded border 
                ${isDark ? 'bg-white/10 text-zinc-400 border-white/5' : 'bg-slate-100 text-slate-500 border-slate-200'}
              `}>
                {wallet?.readable_id || "LOADING..."}
              </span>
-             <span className="flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded border border-emerald-500/20 font-bold uppercase">
-               <CheckCircle size={10} /> Verified L1
-             </span>
+             
+             {profile?.kyc_status === 'approved' ? (
+               <span className="flex items-center gap-1 text-[10px] bg-primary/10 text-emerald-600 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">
+                 <CheckCircle size={10} /> Verified L1
+               </span>
+             ) : profile?.kyc_status === 'pending' ? (
+               <span className="flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded border border-blue-500/20 font-bold uppercase">
+                 <CheckCircle size={10} /> Pending KYC
+               </span>
+             ) : (
+               <span className="flex items-center gap-1 text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded border border-red-500/20 font-bold uppercase">
+                 <Lock size={10} /> Unverified
+               </span>
+             )}
            </div>
         </div>
+        <ChevronRight size={20} className="text-zinc-500 absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
       {/* 2. GENERAL SETTINGS */}
@@ -141,9 +165,15 @@ export default function SettingsPage() {
                action={() => router.push('/dashboard/profile')} 
              />
              <SettingRow 
+               icon={FileText} 
+               label="Identity Verification" 
+               subLabel={profile?.kyc_status === 'approved' ? 'Verified L1 Account' : profile?.kyc_status === 'pending' ? 'Verification Pending' : 'Unlock full account access'}
+               action={() => router.push(profile?.kyc_status === 'approved' ? '/dashboard/profile' : '/dashboard/settings/kyc')} 
+             />
+             <SettingRow 
                icon={CreditCard} 
                label="Limits & Features" 
-               subLabel="Withdrawal limit: $50,000/day"
+               subLabel="Withdrawal limit: $5,000,000/day"
                action={() => {}} 
              />
              <SettingRow 
@@ -196,7 +226,7 @@ export default function SettingsPage() {
                 </div>
                 <button 
                   onClick={toggleTheme}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === 'dark' ? 'bg-emerald-500' : 'bg-zinc-300'}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === 'dark' ? 'bg-primary' : 'bg-zinc-300'}`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
@@ -223,7 +253,7 @@ export default function SettingsPage() {
                icon={Mail} 
                label="Contact Support" 
                subLabel="Average response: 2 hrs"
-               action={() => window.location.href = 'mailto:support@corecoin.com'} 
+               action={() => window.location.href = 'mailto:support@cryptofin.com'} 
              />
              <SettingRow 
                icon={FileText} 
@@ -244,7 +274,7 @@ export default function SettingsPage() {
            </button>
            
            <div className="mt-8 text-center">
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Corecoin v1.2.0</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Cryptofin v1.2.0</p>
               <p className="text-[10px] text-zinc-500 mt-1">Secured by Supabase & Ethereum</p>
            </div>
         </div>

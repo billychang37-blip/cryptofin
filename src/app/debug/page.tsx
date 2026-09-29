@@ -50,7 +50,7 @@ export default function DebugPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-10 font-mono">
-      <h1 className="text-2xl font-bold text-emerald-500 mb-6">System Diagnostic</h1>
+      <h1 className="text-2xl font-bold text-primary mb-6">System Diagnostic</h1>
       
       <div className="space-y-4">
         <div className="p-4 border border-zinc-800 rounded">
@@ -59,16 +59,16 @@ export default function DebugPage() {
           <p className="text-sm text-zinc-400">{status.userEmail}</p>
         </div>
 
-        <div className={`p-4 border rounded ${status.walletFound ? 'border-emerald-500/50 bg-emerald-900/10' : 'border-red-500/50 bg-red-900/10'}`}>
-          <h3 className={status.walletFound ? "text-emerald-500" : "text-red-500"}>
+        <div className={`p-4 border rounded ${status.walletFound ? 'border-primary/50 bg-emerald-900/10' : 'border-red-500/50 bg-red-900/10'}`}>
+          <h3 className={status.walletFound ? "text-primary" : "text-red-500"}>
             1. Wallet Table {status.walletFound ? "✅ OK" : "❌ MISSING"}
           </h3>
           <pre className="text-xs mt-2 overflow-auto">{JSON.stringify(status.walletData, null, 2)}</pre>
           {status.walletError !== "None" && <p className="text-red-400 mt-2">Error: {status.walletError}</p>}
         </div>
 
-        <div className={`p-4 border rounded ${status.securityFound && status.pinSet ? 'border-emerald-500/50 bg-emerald-900/10' : 'border-red-500/50 bg-red-900/10'}`}>
-          <h3 className={status.securityFound ? "text-emerald-500" : "text-red-500"}>
+        <div className={`p-4 border rounded ${status.securityFound && status.pinSet ? 'border-primary/50 bg-emerald-900/10' : 'border-red-500/50 bg-red-900/10'}`}>
+          <h3 className={status.securityFound ? "text-primary" : "text-red-500"}>
             2. Security Table {status.securityFound ? "✅ OK" : "❌ MISSING"}
           </h3>
           <p>PIN Set: {status.pinSet ? "TRUE" : "FALSE"}</p>

@@ -1,80 +1,65 @@
-import React from 'react';
-import { Navbar } from '@/components/landing/Navbar';
-import { Hero } from '@/components/landing/Hero';
-import { MarketTicker } from '@/components/landing/MarketTicker';
-import { CoreFeatures } from '@/components/landing/CoreFeatures';
-import { MobileAppSection } from '@/components/landing/MobileAppSection';
-import { Features } from '@/components/landing/Features'; // The Grid section
-import { Footer } from '@/components/landing/Footer';
-import { CookieConsent } from '@/components/ui/CookieConsent';
+"use client";
+import React, { useState } from 'react';
+import { Navbar } from '@/components/landing/Navbar'
+import { Hero } from '@/components/landing/Hero'
+import { MarqueeRibbon } from '@/components/landing/MarqueeRibbon'
+import { CoreFeatures } from '@/components/landing/CoreFeatures'
+import { SecurityShowcase } from '@/components/landing/SecurityShowcase'
+import { FiatBridge } from '@/components/landing/FiatBridge'
+import { UtilitySection } from '@/components/landing/UtilitySection'
+import { ManifestoQuote } from '@/components/landing/ManifestoQuote'
+import { FaqSection } from '@/components/landing/FaqSection'
+import { FinalCta } from '@/components/landing/FinalCta'
+import { Footer } from '@/components/landing/Footer'
+import { DownloadModal } from '@/components/landing/DownloadModal'
 
 export default function LandingPage() {
-  
-  // 🔍 SEO: JSON-LD Structured Data
-  // This tells Google we are a legitimate Organization and helps get Sitelinks.
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "name": "CoreCoin",
-        "url": "https://corecoin.co",
-        "logo": "https://corecoin.co/icon-512.png",
-        "sameAs": [
-          "https://twitter.com/corecoin",
-          "https://instagram.com/corecoin"
-        ],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "telephone": "+1-555-019-2834", // Optional: Add real support number or remove
-          "contactType": "customer service"
-        }
-      },
-      {
-        "@type": "WebSite",
-        "name": "CoreCoin Wallet",
-        "url": "https://corecoin.co",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://corecoin.co/search?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    ]
-  };
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const open = () => setIsDownloadOpen(true);
+  const close = () => setIsDownloadOpen(false);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-primary/30 selection:text-white">
-      
-      {/* 🔍 SEO Script Injection */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+    
+    <div className="min-h-screen bg-[#FBF9F1] text-[#111111] font-sans selection:bg-[#0052FF] selection:text-white">
 
-      {/* Navigation */}
-      <Navbar />
-      
+      {/* ─── Navigation ─── */}
+      <Navbar onOpenDownload={open} />
+
       <main>
-        {/* 1. Hero Section: The Hook */}
-        <Hero />
-        
-        {/* 2. Market Ticker: Live Trust Signals */}
-        <MarketTicker />
-        
-        {/* 3. Core Features: The "Security" Visual (3D Wireframe) */}
-        <CoreFeatures />
-        
-        {/* 4. Mobile App: "Trade Anywhere" (Phone Mockup) */}
-        <MobileAppSection />
-        
-        {/* 5. Features Grid: Detailed "Why Choose Us" text */}
-        <Features />
+        {/* ─── 1. Hero ─── */}
+        <Hero onOpenDownload={open} />
+
+        {/* ─── 2. Marquee Ribbon ─── */}
+        <MarqueeRibbon />
+
+        {/* ─── 3. Feature Grid (3-card asymmetric layout) ─── */}
+        <CoreFeatures onOpenDownload={open} />
+
+        {/* ─── 4. Security Showcase (dark section, 2 spotlight cards) ─── */}
+        <SecurityShowcase />
+
+        {/* ─── 5. Fiat Bridge (bank bridge + global network) ─── */}
+        <FiatBridge />
+
+        {/* ─── 6. Utility (Download + Universal Connect) ─── */}
+        <UtilitySection onOpenDownload={open} />
+
+        {/* ─── 7. Manifesto Quote (editorial blockquote) ─── */}
+        <ManifestoQuote />
+
+        {/* ─── 8. FAQ Accordion ─── */}
+        <FaqSection />
+
+        {/* ─── 9. Closing CTA (2-col split layout) ─── */}
+        <FinalCta onOpenDownload={open} />
       </main>
 
-      {/* Footer & Compliance */}
+      {/* ─── Footer ─── */}
       <Footer />
-      <CookieConsent />
+
+      {/* ─── Download Modal ─── */}
+      <DownloadModal isOpen={isDownloadOpen} onClose={close} />
     </div>
+  
   );
 }

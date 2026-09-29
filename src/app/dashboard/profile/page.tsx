@@ -66,7 +66,7 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#050505]' : 'bg-[#F3F4F6]'}`}>
-      <Loader2 className="animate-spin text-emerald-500" size={32} />
+      <Loader2 className="animate-spin text-primary" size={32} />
     </div>
   );
 
@@ -90,7 +90,7 @@ export default function ProfilePage() {
         </div>
         <button 
           onClick={() => setShowEdit(true)}
-          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
+          className="bg-primary/10 hover:bg-primary/20 text-emerald-600 border border-primary/20 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
         >
           <Edit2 size={16} /> Edit
         </button>
@@ -103,7 +103,7 @@ export default function ProfilePage() {
            : 'bg-white border-slate-200'
          }
       `}>
-         {isDark && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-500/10 rounded-full blur-[60px] pointer-events-none" />}
+         {isDark && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />}
          
          <div className="relative inline-block mb-4">
             <div className={`w-24 h-24 rounded-full border-4 flex items-center justify-center text-3xl font-bold shadow-xl relative z-10 overflow-hidden group
@@ -122,8 +122,8 @@ export default function ProfilePage() {
                onClick={() => setShowEdit(true)}
                className={`absolute bottom-0 right-0 p-2 rounded-full border-4 z-20 hover:scale-110 transition-transform cursor-pointer
                   ${isDark 
-                    ? 'bg-emerald-500 text-black border-[#0a0a0a]' 
-                    : 'bg-emerald-500 text-white border-white'
+                    ? 'bg-primary text-black border-[#0a0a0a]' 
+                    : 'bg-primary text-white border-white'
                   }
                `}
             >
@@ -152,9 +152,9 @@ export default function ProfilePage() {
                  {wallet?.readable_id || "LOADING..."}
                </span>
                {copied ? (
-                 <Check size={14} className="text-emerald-500" />
+                 <Check size={14} className="text-primary" />
                ) : (
-                 <Copy size={14} className="text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+                 <Copy size={14} className="text-zinc-400 group-hover:text-primary transition-colors" />
                )}
             </button>
 
@@ -225,7 +225,7 @@ function DetailRow({ icon: Icon, label, value, placeholder, isVerified, isDark }
               {value || placeholder}
            </div>
         </div>
-        {isVerified && <Shield size={16} className="text-emerald-500 shrink-0" />}
+        {isVerified && <Shield size={16} className="text-primary shrink-0" />}
      </div>
   );
 }

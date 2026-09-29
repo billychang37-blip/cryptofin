@@ -57,7 +57,7 @@ export default function MarketsPage() {
   const topGainer = coins.length > 0 ? [...coins].sort((a, b) => parseFloat(b.changePercent24Hr) - parseFloat(a.changePercent24Hr))[0] : BACKUP_COINS[2];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30">
       <Navbar />
       
       {/* Reduced padding on mobile (pt-24) vs desktop (pt-32) */}
@@ -85,7 +85,7 @@ export default function MarketsPage() {
                 placeholder="Search Coin" 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500 transition-colors text-white"
+                className="w-full h-12 bg-zinc-900/50 border border-white/10 rounded-xl pl-12 pr-4 text-sm focus:outline-none focus:border-primary transition-colors text-white"
               />
            </div>
         </div>
@@ -103,7 +103,7 @@ export default function MarketsPage() {
         <div className="bg-zinc-900/30 border border-white/5 rounded-2xl md:rounded-3xl overflow-hidden min-h-[400px]">
            {loading ? (
              <div className="flex items-center justify-center h-[400px]">
-                <Loader2 className="animate-spin text-emerald-500" size={40} />
+                <Loader2 className="animate-spin text-primary" size={40} />
              </div>
            ) : (
              <div className="overflow-x-auto -mx-4 md:mx-0"> {/* Negative margin on mobile to let it bleed to edges */}
@@ -140,7 +140,7 @@ export default function MarketsPage() {
                               {formatPrice(coin.priceUsd)}
                            </td>
                            <td className={`p-4 md:p-6 text-right font-bold text-sm`}>
-                             <div className={`flex justify-end items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                             <div className={`flex justify-end items-center gap-1 ${isPositive ? 'text-primary' : 'text-red-500'}`}>
                                {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                                {Math.abs(changeNum).toFixed(2)}%
                              </div>
@@ -152,7 +152,7 @@ export default function MarketsPage() {
                               {formatCompactNumber(coin.volumeUsd24Hr)}
                            </td>
                            <td className="p-6 text-center hidden md:table-cell">
-                             <button className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-black rounded-lg text-xs font-bold transition-all">
+                             <button className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-black rounded-lg text-xs font-bold transition-all">
                                Trade
                              </button>
                            </td>
@@ -176,7 +176,7 @@ function HighlightCard({ label, coin, symbol, price, change }: any) {
   const changeNum = parseFloat(change);
   const isPositive = changeNum >= 0;
   return (
-    <div className="p-5 md:p-6 bg-zinc-900/30 border border-white/5 rounded-2xl hover:border-emerald-500/20 transition-colors">
+    <div className="p-5 md:p-6 bg-zinc-900/30 border border-white/5 rounded-2xl hover:border-primary/20 transition-colors">
       <div className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">{label}</div>
       <div className="flex justify-between items-end">
         <div>
@@ -185,7 +185,7 @@ function HighlightCard({ label, coin, symbol, price, change }: any) {
         </div>
         <div className="text-right">
           <div className="text-base md:text-lg font-bold text-white">{price}</div>
-          <div className={`text-xs font-bold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+          <div className={`text-xs font-bold ${isPositive ? 'text-primary' : 'text-red-500'}`}>
             {isPositive ? '+' : ''}{changeNum.toFixed(2)}%
           </div>
         </div>

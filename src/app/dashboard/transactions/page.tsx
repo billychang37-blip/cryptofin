@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
 import { createClient } from '@/lib/supabase';
 import { ArrowUpRight, ArrowDownLeft, RefreshCw, Download, Loader2, ChevronDown } from 'lucide-react';
@@ -10,6 +11,7 @@ const ITEMS_PER_PAGE = 20; // Fetch 20 at a time for smoother loading
 export default function TransactionsPage() {
   const { theme } = useTheme();
   const supabase = createClient();
+  const router = useRouter();
   
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,9 +85,7 @@ export default function TransactionsPage() {
   return (
     <div className="p-4 md:p-8 pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-[max(env(safe-area-inset-top),2rem)] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
       
-      {selectedTx && (
-        <TransactionReceipt tx={selectedTx} onClose={() => setSelectedTx(null)} />
-      )}
+      
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -103,7 +103,7 @@ export default function TransactionsPage() {
       {/* Filters */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         {['all', 'deposit', 'withdrawal', 'swap'].map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full text-sm font-bold capitalize transition-all ${filter === f ? 'bg-emerald-500 text-black' : (isDark ? 'bg-zinc-900 text-zinc-500 hover:text-white' : 'bg-white text-slate-500 hover:text-slate-900 border border-slate-200')}`}>
+          <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full text-sm font-bold capitalize transition-all ${filter === f ? 'bg-primary text-black' : (isDark ? 'bg-zinc-900 text-zinc-500 hover:text-white' : 'bg-white text-slate-500 hover:text-slate-900 border border-slate-200')}`}>
             {f}
           </button>
         ))}
@@ -124,16 +124,16 @@ export default function TransactionsPage() {
             </thead>
             <tbody className={`divide-y ${isDark ? 'divide-white/5' : 'divide-slate-100'}`}>
                 {loading ? (
-                  <tr><td colSpan={5} className="px-6 py-20 text-center"><Loader2 className="animate-spin mx-auto text-emerald-500 mb-2" />Loading history...</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-20 text-center"><Loader2 className="animate-spin mx-auto text-primary mb-2" />Loading history...</td></tr>
                 ) : transactions.length > 0 ? transactions.map((tx) => (
                 <tr 
                     key={tx.id} 
-                    onClick={() => setSelectedTx(tx)}
+                    onClick={() => router.push(`/dashboard/transactions/${tx.id}`)}
                     className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-slate-50'}`}
                 >
                     <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' : (tx.type === 'swap' ? 'bg-purple-500/10 text-purple-500' : 'bg-zinc-500/10 text-zinc-500')}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'deposit' ? 'bg-primary/10 text-primary' : (tx.type === 'swap' ? 'bg-purple-500/10 text-purple-500' : 'bg-zinc-500/10 text-zinc-500')}`}>
                         {tx.type === 'deposit' ? <ArrowDownLeft size={14} /> : (tx.type === 'swap' ? <RefreshCw size={14} /> : <ArrowUpRight size={14} />)}
                         </div>
                         <span className={`font-bold text-sm capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>{tx.type}</span>
@@ -145,13 +145,13 @@ export default function TransactionsPage() {
                         {formatSmartDate(tx.created_at)}
                     </td>
 
-                    <td className={`px-6 py-4 text-sm font-mono font-bold ${tx.type === 'deposit' ? 'text-emerald-500' : (isDark ? 'text-white' : 'text-slate-900')}`}>
+                    <td className={`px-6 py-4 text-sm font-mono font-bold ${tx.type === 'deposit' ? 'text-primary' : (isDark ? 'text-white' : 'text-slate-900')}`}>
                         {tx.type === 'deposit' ? '+' : '-'}{Math.abs(tx.amount)} <span className="text-xs text-zinc-500">{tx.currency}</span>
                     </td>
                     
                     <td className="px-6 py-4 text-right">
                         <span className={`text-[10px] font-bold px-2 py-1 rounded capitalize ${
-                            tx.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                            tx.status === 'completed' ? 'bg-primary/10 text-primary' :
                             tx.status === 'failed' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'
                         }`}>
                             {tx.status}

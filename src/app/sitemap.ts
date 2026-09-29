@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://corecoin.co'; // Your actual domain
+  const baseUrl = 'https://cryptofin.co'; // Your actual domain
 
   return [
     {

@@ -1,152 +1,96 @@
-"use client";
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Twitter, Linkedin, Github, Send, Instagram, Youtube } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react'
 
-export function Footer() {
+export const Footer = () => {
   return (
-    <footer className="bg-[#050505] border-t border-white/5 pt-20 pb-12 px-6">
-      <div className="max-w-7xl mx-auto">
+    <footer className="border-t border-slate-200 bg-[#FBF9F1] pt-14 pb-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
         
-        {/* TOP SECTION: LOGO & LINKS (Unchanged) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-10 mb-20">
+        {/* Main Footer Links */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8 pb-12 border-b border-slate-200">
           
-          {/* BRAND COLUMN */}
-          <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-6 group w-fit">
-              <div className="relative w-8 h-8 flex items-center justify-center">
-                <Image 
-                  src="/icon.svg" 
-                  alt="Corecoin" 
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <span className="font-outfit text-xl font-extrabold tracking-tight text-white uppercase group-hover:text-emerald-400 transition-colors">
-                CORECOIN
-              </span>
-            </Link>
-            <p className="text-zinc-500 text-sm leading-relaxed mb-8 max-w-sm">
-              The complete crypto ecosystem for everyone. Buy, sell, trade, and earn cryptocurrencies with institutional-grade security and zero friction.
+          {/* Brand Col */}
+          <div className="col-span-2 space-y-3.5">
+            <img src="/landing/logo.png" alt="CRYPTOFIN" className="h-7 w-auto object-contain" />
+            <p className="text-xs sm:text-sm text-slate-500 max-w-xs leading-relaxed">
+              The calm web wallet for holding, swapping, and moving your digital balance with non-custodial peace of mind.
             </p>
-            
+            <div className="flex items-center gap-2 pt-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-mono text-slate-500 font-semibold">14 Chains • 100% Operational</span>
+            </div>
+          </div>
+
+          {/* Col 1: Product */}
+          <div className="space-y-2.5">
+            <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Product
+            </div>
+            <ul className="space-y-2 text-xs sm:text-sm text-slate-600 font-medium">
+              <li><a href="#home" className="hover:text-black transition-colors">Web Wallet</a></li>
+              <li><a href="#features" className="hover:text-black transition-colors">Multi-Chain Swaps</a></li>
+              <li><a href="#features" className="hover:text-black transition-colors">MPC Staking Yields</a></li>
+              <li><a href="#utility" className="hover:text-black transition-colors">dApp Connect</a></li>
+            </ul>
+          </div>
+
+          {/* Col 2: Security */}
+          <div className="space-y-2.5">
+            <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Security
+            </div>
+            <ul className="space-y-2 text-sm text-slate-600 font-medium">
+              <li><a href="#security-showcase" className="hover:text-black transition-colors">MPC Architecture</a></li>
+              <li><a href="#security-showcase" className="hover:text-black transition-colors">CertiK & Halborn</a></li>
+              <li><a href="#security-showcase" className="hover:text-black transition-colors">Passkey Enclave</a></li>
+              <li><a href="#fiat-bridge" className="hover:text-black transition-colors">1:1 Reserves</a></li>
+            </ul>
+          </div>
+
+          {/* Col 3: Connect */}
+          <div className="space-y-2.5">
+            <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Community
+            </div>
+            <ul className="space-y-2 text-sm text-slate-600 font-medium">
+              <li>
+                <a href="https://x.com/HelloDottaa" target="_blank" rel="noreferrer" className="hover:text-black transition-colors flex items-center gap-1">
+                  <span>X (Twitter)</span>
+                  <ArrowUpRight className="h-3 w-3" />
+                </a>
+              </li>
+              <li>
+                <a href="https://t.me" target="_blank" rel="noreferrer" className="hover:text-black transition-colors flex items-center gap-1">
+                  <span>Telegram</span>
+                  <ArrowUpRight className="h-3 w-3" />
+                </a>
+              </li>
+              <li>
+                <a href="#faq" className="hover:text-black transition-colors flex items-center gap-1">
+                  <span>Help & FAQ</span>
+                  <ArrowUpRight className="h-3 w-3" />
+                </a>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        {/* Regulatory Disclaimers & Copyright */}
+        <div className="pt-6 space-y-3 text-[11px] text-slate-400 leading-relaxed">
+          <p>
+            Disclaimer: CRYPTOFIN is non-custodial web wallet software. Digital asset values fluctuate and involve risk. Cryptographic key shards are generated mathematically on your hardware and never held in singular possession by CRYPTOFIN.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200 text-slate-500">
+            <span>© 2026 CRYPTOFIN. All rights reserved.</span>
             <div className="flex gap-4">
-               <SocialLink icon={<Twitter size={18} />} href="#" />
-               <SocialLink icon={<Send size={18} />} href="#" />
-               <SocialLink icon={<Instagram size={18} />} href="#" />
-               <SocialLink icon={<Youtube size={18} />} href="#" />
+              <a href="#faq" className="hover:text-black">Privacy</a>
+              <a href="#faq" className="hover:text-black">Terms</a>
+              <a href="#faq" className="hover:text-black">Disclosures</a>
             </div>
           </div>
-
-          {/* COLUMN 1: PRODUCTS */}
-          <div>
-            <h4 className="text-white font-bold mb-6">Products</h4>
-            <ul className="space-y-4 text-sm text-zinc-500">
-              <li><FooterLink href="#">Buy Crypto</FooterLink></li>
-              <li><FooterLink href="#">Spot Market</FooterLink></li>
-              <li><FooterLink href="#">Corecoin Earn</FooterLink></li>
-              <li><FooterLink href="#">Corecoin API</FooterLink></li>
-              <li><FooterLink href="#">Institutional Services</FooterLink></li>
-            </ul>
-          </div>
-
-          {/* COLUMN 2: COMPANY */}
-          <div>
-            <h4 className="text-white font-bold mb-6">Company</h4>
-            <ul className="space-y-4 text-sm text-zinc-500">
-              <li><FooterLink href="#">About Us</FooterLink></li>
-              <li><FooterLink href="#">Careers</FooterLink></li>
-              <li><FooterLink href="#">Press</FooterLink></li>
-              <li><FooterLink href="#">Community</FooterLink></li>
-              <li><FooterLink href="#">Legal & Privacy</FooterLink></li>
-            </ul>
-          </div>
-
-          {/* COLUMN 3: SUPPORT */}
-          <div>
-            <h4 className="text-white font-bold mb-6">Support</h4>
-            <ul className="space-y-4 text-sm text-zinc-500">
-              <li><FooterLink href="#">Help Center</FooterLink></li>
-              <li><FooterLink href="#">Trading Fees</FooterLink></li>
-              <li><FooterLink href="#">Security Center</FooterLink></li>
-              <li><FooterLink href="#">Submit a Ticket</FooterLink></li>
-              <li><FooterLink href="#">Status Page</FooterLink></li>
-            </ul>
-          </div>
-
-          {/* COLUMN 4: DEVELOPERS */}
-          <div>
-            <h4 className="text-white font-bold mb-6">Developers</h4>
-            <ul className="space-y-4 text-sm text-zinc-500">
-              <li><FooterLink href="#">Documentation</FooterLink></li>
-              <li><FooterLink href="#">Github</FooterLink></li>
-              <li><FooterLink href="#">Audit Reports</FooterLink></li>
-              <li><FooterLink href="#">Bug Bounty</FooterLink></li>
-            </ul>
-          </div>
-
         </div>
 
-        {/* DIVIDER */}
-        <div className="w-full h-px bg-white/5 mb-10"></div>
-
-        {/* BOTTOM SECTION: DISCLAIMER & COPYRIGHT */}
-        <div className="flex flex-col gap-8">
-          
-          {/* THE DISCLAIMER TEXT (FIXED FOR CUSTODIAL EXCHANGE) */}
-          <div className="text-[11px] leading-relaxed text-zinc-600 space-y-4 text-justify border-l-2 border-zinc-800 pl-4">
-            <p>
-              <strong>Corecoin is a digital asset exchange platform.</strong> While we employ institutional-grade security measures (DESM) to protect user funds, digital asset trading involves significant risk. Corecoin does not conduct any independent diligence on the individual growth potential of any blockchain asset listed on the platform.
-            </p>
-            <p>
-              You are fully and solely responsible for evaluating your investments and determining whether you will trade blockchain assets based on your own research. In many cases, blockchain assets you trade may decrease in value. Past performance is not indicative of future results.
-            </p>
-            <p>
-               The value of the blockchain assets you hold is subject to market volatility. Unlike traditional bank deposits, your crypto assets are not covered by government deposit insurance schemes (such as FDIC or NDIC) unless explicitly stated for specific fiat balances.
-            </p>
-            <p className="font-medium text-zinc-500">
-              <strong>Security Notice:</strong> While Corecoin manages the custody of assets, you are responsible for maintaining the security of your account credentials (passwords, 2FA codes, and API keys). Corecoin will never ask for your password or 2FA code via email or social media.
-            </p>
-          </div>
-
-          {/* COPYRIGHT & LEGAL LINKS */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-t border-white/5 pt-8 mt-4">
-            <div className="text-zinc-500 text-xs">
-              Copyright © 2026 Corecoin Technologies Inc. All rights reserved.
-            </div>
-            
-            <div className="flex gap-6 text-xs text-zinc-500 font-medium">
-               <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-               <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
-               <Link href="#" className="hover:text-white transition-colors">Trademarks</Link>
-               <Link href="#" className="hover:text-white transition-colors">Cookie Policy</Link>
-            </div>
-          </div>
-
-        </div>
       </div>
     </footer>
-  );
-}
-
-// Small helper for Links
-function FooterLink({ href, children }: { href: string, children: React.ReactNode }) {
-  return (
-    <Link href={href} className="hover:text-emerald-400 transition-colors block">
-      {children}
-    </Link>
-  );
-}
-
-// Small helper for Social Icons
-function SocialLink({ icon, href }: { icon: React.ReactNode, href: string }) {
-  return (
-    <Link 
-      href={href} 
-      className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 hover:bg-emerald-500 hover:text-black transition-all"
-    >
-      {icon}
-    </Link>
-  );
+  )
 }

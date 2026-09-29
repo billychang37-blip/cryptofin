@@ -208,7 +208,7 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
                      <div className="flex items-center gap-2 cursor-pointer" onClick={handleMax}>
                         <Wallet size={12} className={textSub} />
                         <span className={`text-xs font-medium ${textSub}`}>{balance.toFixed(4)}</span>
-                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">MAX</span>
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">MAX</span>
                      </div>
                   </div>
               </div>
@@ -242,7 +242,7 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
               <button 
                  onClick={() => setStep(2)}
                  disabled={!fromAmount || parseFloat(fromAmount) <= 0 || parseFloat(fromAmount) > balance}
-                 className={`w-full mt-3 py-4 rounded-[24px] font-bold text-[18px] text-white transition-all ${!fromAmount ? 'bg-zinc-700/50 text-zinc-400 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20'}`}
+                 className={`w-full mt-3 py-4 rounded-[24px] font-bold text-[18px] text-white transition-all ${!fromAmount ? 'bg-zinc-700/50 text-zinc-400 cursor-not-allowed' : 'bg-primary hover:bg-emerald-600 shadow-lg shadow-primary/20'}`}
               >
                  {parseFloat(fromAmount) > balance ? 'Insufficient Balance' : 'Review Swap'}
               </button>
@@ -262,7 +262,7 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
                  <div className="flex justify-between">
                     <span className={`text-sm ${textSub}`}>You receive</span>
                     <div className="text-right">
-                       <div className={`text-[18px] font-bold text-emerald-500`}>{toAmount} {toAsset}</div>
+                       <div className={`text-[18px] font-bold text-primary`}>{toAmount} {toAsset}</div>
                        <div className={`text-xs ${textSub}`}>${(parseFloat(toAmount) * prices[toAsset]).toFixed(2)}</div>
                     </div>
                  </div>
@@ -276,7 +276,7 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
 
               <div className="flex gap-2">
                   <button onClick={() => setStep(1)} className={`w-1/3 py-4 rounded-[24px] font-bold border ${isDark ? 'border-zinc-700 text-white' : 'border-slate-200 text-slate-700'}`}>Back</button>
-                  <button onClick={executeSwap} disabled={loading} className="w-2/3 py-4 rounded-[24px] font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                  <button onClick={executeSwap} disabled={loading} className="w-2/3 py-4 rounded-[24px] font-bold bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
                      {loading ? <Loader2 className="animate-spin" /> : 'Confirm Swap'}
                   </button>
               </div>

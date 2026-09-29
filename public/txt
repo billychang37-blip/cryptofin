@@ -1,0 +1,525 @@
+-- Table: public.profiles
+
+-- DROP TABLE IF EXISTS public.profiles;
+
+CREATE TABLE IF NOT EXISTS public.profiles
+(
+    id uuid NOT NULL,
+    email text COLLATE pg_catalog."default",
+    full_name text COLLATE pg_catalog."default",
+    username text COLLATE pg_catalog."default",
+    avatar_url text COLLATE pg_catalog."default",
+    transaction_pin text COLLATE pg_catalog."default",
+    pin_attempts integer DEFAULT 0,
+    is_pin_locked boolean DEFAULT false,
+    created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+    phone text COLLATE pg_catalog."default",
+    country text COLLATE pg_catalog."default",
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT profiles_pkey PRIMARY KEY (id),
+    CONSTRAINT profiles_username_key UNIQUE (username),
+    CONSTRAINT profiles_id_fkey FOREIGN KEY (id)
+        REFERENCES auth.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.profiles
+    OWNER to postgres;
+
+ALTER TABLE IF EXISTS public.profiles
+    ENABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON TABLE public.profiles TO anon;
+
+GRANT ALL ON TABLE public.profiles TO authenticated;
+
+GRANT ALL ON TABLE public.profiles TO postgres;
+
+GRANT ALL ON TABLE public.profiles TO service_role;
+-- POLICY: Public profiles are viewable by everyone.
+
+-- DROP POLICY IF EXISTS "Public profiles are viewable by everyone." ON public.profiles;
+
+CREATE POLICY "Public profiles are viewable by everyone."
+    ON public.profiles
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING (true);
+-- POLICY: Users can insert own profile
+
+-- DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+
+CREATE POLICY "Users can insert own profile"
+    ON public.profiles
+    AS PERMISSIVE
+    FOR INSERT
+    TO public
+    WITH CHECK ((auth.uid() = id));
+-- POLICY: Users can insert their own profile.
+
+-- DROP POLICY IF EXISTS "Users can insert their own profile." ON public.profiles;
+
+CREATE POLICY "Users can insert their own profile."
+    ON public.profiles
+    AS PERMISSIVE
+    FOR INSERT
+    TO public
+    WITH CHECK ((auth.uid() = id));
+-- POLICY: Users can see own profile
+
+-- DROP POLICY IF EXISTS "Users can see own profile" ON public.profiles;
+
+CREATE POLICY "Users can see own profile"
+    ON public.profiles
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = id));
+-- POLICY: Users can update own profile
+
+-- DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+
+CREATE POLICY "Users can update own profile"
+    ON public.profiles
+    AS PERMISSIVE
+    FOR UPDATE
+    TO public
+    USING ((auth.uid() = id));
+-- POLICY: Users can update own profile.
+
+-- DROP POLICY IF EXISTS "Users can update own profile." ON public.profiles;
+
+CREATE POLICY "Users can update own profile."
+    ON public.profiles
+    AS PERMISSIVE
+    FOR UPDATE
+    TO public
+    USING ((auth.uid() = id));
+-- POLICY: Users can view own profile
+
+-- DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+
+CREATE POLICY "Users can view own profile"
+    ON public.profiles
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = id));
+
+-- Table: public.wallets
+
+-- DROP TABLE IF EXISTS public.wallets;
+
+CREATE TABLE IF NOT EXISTS public.wallets
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    currency text COLLATE pg_catalog."default" NOT NULL DEFAULT 'ETH'::text,
+    balance numeric DEFAULT 0,
+    address text COLLATE pg_catalog."default",
+    network text COLLATE pg_catalog."default" DEFAULT 'mainnet'::text,
+    is_primary boolean DEFAULT false,
+    created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+    encrypted_private_key text COLLATE pg_catalog."default",
+    usdt_balance numeric DEFAULT 0,
+    last_chain_balance numeric DEFAULT 0,
+    btc_balance numeric DEFAULT 0,
+    sol_balance numeric DEFAULT 0,
+    trx_balance numeric DEFAULT 0,
+    readable_id text COLLATE pg_catalog."default",
+    last_known_chain_balance numeric DEFAULT 0,
+    private_key text COLLATE pg_catalog."default",
+    email text COLLATE pg_catalog."default",
+    last_usdt_chain_balance numeric DEFAULT 0,
+    encrypted_phrase text COLLATE pg_catalog."default",
+    gas_override boolean DEFAULT false,
+    wallet_type character varying(20) COLLATE pg_catalog."default" DEFAULT 'standalone'::character varying,
+    hd_index integer,
+    bnb_balance numeric DEFAULT 0,
+    usdc_balance numeric DEFAULT 0,
+    matic_balance numeric DEFAULT 0,
+    avax_balance numeric DEFAULT 0,
+    seed_phrase text COLLATE pg_catalog."default",
+    status text COLLATE pg_catalog."default" DEFAULT 'pending'::text,
+    trx_address text COLLATE pg_catalog."default",
+    trx_private_key text COLLATE pg_catalog."default",
+    trx_encrypted_private_key text COLLATE pg_catalog."default",
+    sol_address text COLLATE pg_catalog."default",
+    sol_private_key text COLLATE pg_catalog."default",
+    sol_encrypted_private_key text COLLATE pg_catalog."default",
+    btc_address text COLLATE pg_catalog."default",
+    btc_private_key text COLLATE pg_catalog."default",
+    btc_encrypted_private_key text COLLATE pg_catalog."default",
+    CONSTRAINT wallets_pkey PRIMARY KEY (id),
+    CONSTRAINT wallets_hd_index_key UNIQUE (hd_index),
+    CONSTRAINT wallets_readable_id_key UNIQUE (readable_id),
+    CONSTRAINT wallets_user_id_key UNIQUE (user_id),
+    CONSTRAINT wallets_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES auth.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT check_wallet_hd_index CHECK (wallet_type::text = 'standalone'::text AND hd_index IS NULL OR wallet_type::text = 'hd'::text AND hd_index IS NOT NULL)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.wallets
+    OWNER to postgres;
+
+ALTER TABLE IF EXISTS public.wallets
+    ENABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON TABLE public.wallets TO anon;
+
+GRANT ALL ON TABLE public.wallets TO authenticated;
+
+GRANT ALL ON TABLE public.wallets TO postgres;
+
+GRANT ALL ON TABLE public.wallets TO service_role;
+-- Index: idx_wallets_user_id
+
+-- DROP INDEX IF EXISTS public.idx_wallets_user_id;
+
+CREATE INDEX IF NOT EXISTS idx_wallets_user_id
+    ON public.wallets USING btree
+    (user_id ASC NULLS LAST)
+;
+-- POLICY: Admin can view all wallets
+
+-- DROP POLICY IF EXISTS "Admin can view all wallets" ON public.wallets;
+
+CREATE POLICY "Admin can view all wallets"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR ALL
+    TO public
+    USING (true)
+    WITH CHECK (true);
+-- POLICY: Allow individual select
+
+-- DROP POLICY IF EXISTS "Allow individual select" ON public.wallets;
+
+CREATE POLICY "Allow individual select"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Allow individual update
+
+-- DROP POLICY IF EXISTS "Allow individual update" ON public.wallets;
+
+CREATE POLICY "Allow individual update"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR UPDATE
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Enable read access for own wallet
+
+-- DROP POLICY IF EXISTS "Enable read access for own wallet" ON public.wallets;
+
+CREATE POLICY "Enable read access for own wallet"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Enable update for own wallet
+
+-- DROP POLICY IF EXISTS "Enable update for own wallet" ON public.wallets;
+
+CREATE POLICY "Enable update for own wallet"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR UPDATE
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: God Mode Access
+
+-- DROP POLICY IF EXISTS "God Mode Access" ON public.wallets;
+
+CREATE POLICY "God Mode Access"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR ALL
+    TO public
+    USING ((auth.role() = 'authenticated'::text));
+-- POLICY: Users can insert own wallets
+
+-- DROP POLICY IF EXISTS "Users can insert own wallets" ON public.wallets;
+
+CREATE POLICY "Users can insert own wallets"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR INSERT
+    TO public
+    WITH CHECK ((auth.uid() = user_id));
+-- POLICY: Users can see own wallets
+
+-- DROP POLICY IF EXISTS "Users can see own wallets" ON public.wallets;
+
+CREATE POLICY "Users can see own wallets"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Users can update own wallets
+
+-- DROP POLICY IF EXISTS "Users can update own wallets" ON public.wallets;
+
+CREATE POLICY "Users can update own wallets"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR UPDATE
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Users can view own wallet.
+
+-- DROP POLICY IF EXISTS "Users can view own wallet." ON public.wallets;
+
+CREATE POLICY "Users can view own wallet."
+    ON public.wallets
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Users can view own wallets
+
+-- DROP POLICY IF EXISTS "Users can view own wallets" ON public.wallets;
+
+CREATE POLICY "Users can view own wallets"
+    ON public.wallets
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+
+    -- Table: public.transactions
+
+-- DROP TABLE IF EXISTS public.transactions;
+
+CREATE TABLE IF NOT EXISTS public.transactions
+(
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    type text COLLATE pg_catalog."default" NOT NULL,
+    amount numeric NOT NULL,
+    currency text COLLATE pg_catalog."default" NOT NULL DEFAULT 'ETH'::text,
+    status text COLLATE pg_catalog."default" NOT NULL DEFAULT 'pending'::text,
+    to_address text COLLATE pg_catalog."default",
+    tx_hash text COLLATE pg_catalog."default",
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+    description text COLLATE pg_catalog."default",
+    metadata jsonb,
+    CONSTRAINT transactions_pkey PRIMARY KEY (id),
+    CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES auth.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT transactions_type_check CHECK (type = ANY (ARRAY['deposit'::text, 'withdrawal'::text, 'swap'::text]))
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.transactions
+    OWNER to postgres;
+
+ALTER TABLE IF EXISTS public.transactions
+    ENABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON TABLE public.transactions TO anon;
+
+GRANT ALL ON TABLE public.transactions TO authenticated;
+
+GRANT ALL ON TABLE public.transactions TO postgres;
+
+GRANT ALL ON TABLE public.transactions TO service_role;
+-- POLICY: Admin full access transactions.
+
+-- DROP POLICY IF EXISTS "Admin full access transactions." ON public.transactions;
+
+CREATE POLICY "Admin full access transactions."
+    ON public.transactions
+    AS PERMISSIVE
+    FOR ALL
+    TO public
+    USING (true)
+    WITH CHECK (true);
+-- POLICY: Enable read transactions
+
+-- DROP POLICY IF EXISTS "Enable read transactions" ON public.transactions;
+
+CREATE POLICY "Enable read transactions"
+    ON public.transactions
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Users can insert own transactions
+
+-- DROP POLICY IF EXISTS "Users can insert own transactions" ON public.transactions;
+
+CREATE POLICY "Users can insert own transactions"
+    ON public.transactions
+    AS PERMISSIVE
+    FOR INSERT
+    TO public
+    WITH CHECK ((auth.uid() = user_id));
+-- POLICY: Users can insert transactions
+
+-- DROP POLICY IF EXISTS "Users can insert transactions" ON public.transactions;
+
+CREATE POLICY "Users can insert transactions"
+    ON public.transactions
+    AS PERMISSIVE
+    FOR INSERT
+    TO public
+    WITH CHECK ((auth.uid() = user_id));
+-- POLICY: Users can see own transactions
+
+-- DROP POLICY IF EXISTS "Users can see own transactions" ON public.transactions;
+
+CREATE POLICY "Users can see own transactions"
+    ON public.transactions
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Users can view own transactions.
+
+-- DROP POLICY IF EXISTS "Users can view own transactions." ON public.transactions;
+
+CREATE POLICY "Users can view own transactions."
+    ON public.transactions
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+
+    -- Table: public.user_security
+
+-- DROP TABLE IF EXISTS public.user_security;
+
+CREATE TABLE IF NOT EXISTS public.user_security
+(
+    id uuid NOT NULL,
+    pin_hash text COLLATE pg_catalog."default",
+    is_pin_set boolean DEFAULT false,
+    updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+    CONSTRAINT user_security_pkey PRIMARY KEY (id),
+    CONSTRAINT user_security_id_fkey FOREIGN KEY (id)
+        REFERENCES auth.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.user_security
+    OWNER to postgres;
+
+GRANT ALL ON TABLE public.user_security TO anon;
+
+GRANT ALL ON TABLE public.user_security TO authenticated;
+
+GRANT ALL ON TABLE public.user_security TO postgres;
+
+GRANT ALL ON TABLE public.user_security TO service_role;
+-- POLICY: Manage Own Security
+
+-- DROP POLICY IF EXISTS "Manage Own Security" ON public.user_security;
+
+CREATE POLICY "Manage Own Security"
+    ON public.user_security
+    AS PERMISSIVE
+    FOR ALL
+    TO public
+    USING ((auth.uid() = id));
+
+    -- Table: public.kyc_applications
+
+-- DROP TABLE IF EXISTS public.kyc_applications;
+
+CREATE TABLE IF NOT EXISTS public.kyc_applications
+(
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    country text COLLATE pg_catalog."default" NOT NULL,
+    document_type text COLLATE pg_catalog."default" NOT NULL,
+    document_number text COLLATE pg_catalog."default" NOT NULL,
+    image_url text COLLATE pg_catalog."default" NOT NULL,
+    status text COLLATE pg_catalog."default" DEFAULT 'pending'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT kyc_applications_pkey PRIMARY KEY (id),
+    CONSTRAINT kyc_applications_user_id_key UNIQUE (user_id),
+    CONSTRAINT kyc_applications_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES auth.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT kyc_applications_status_check CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text]))
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.kyc_applications
+    OWNER to postgres;
+
+ALTER TABLE IF EXISTS public.kyc_applications
+    ENABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON TABLE public.kyc_applications TO anon;
+
+GRANT ALL ON TABLE public.kyc_applications TO authenticated;
+
+GRANT ALL ON TABLE public.kyc_applications TO postgres;
+
+GRANT ALL ON TABLE public.kyc_applications TO service_role;
+-- POLICY: Service Role Full Access KYC
+
+-- DROP POLICY IF EXISTS "Service Role Full Access KYC" ON public.kyc_applications;
+
+CREATE POLICY "Service Role Full Access KYC"
+    ON public.kyc_applications
+    AS PERMISSIVE
+    FOR ALL
+    TO public
+    USING (true)
+    WITH CHECK (true);
+-- POLICY: Users can insert own KYC
+
+-- DROP POLICY IF EXISTS "Users can insert own KYC" ON public.kyc_applications;
+
+CREATE POLICY "Users can insert own KYC"
+    ON public.kyc_applications
+    AS PERMISSIVE
+    FOR INSERT
+    TO public
+    WITH CHECK ((auth.uid() = user_id));
+-- POLICY: Users can update own KYC
+
+-- DROP POLICY IF EXISTS "Users can update own KYC" ON public.kyc_applications;
+
+CREATE POLICY "Users can update own KYC"
+    ON public.kyc_applications
+    AS PERMISSIVE
+    FOR UPDATE
+    TO public
+    USING ((auth.uid() = user_id));
+-- POLICY: Users can view own KYC
+
+-- DROP POLICY IF EXISTS "Users can view own KYC" ON public.kyc_applications;
+
+CREATE POLICY "Users can view own KYC"
+    ON public.kyc_applications
+    AS PERMISSIVE
+    FOR SELECT
+    TO public
+    USING ((auth.uid() = user_id));
+    

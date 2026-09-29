@@ -2,23 +2,23 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { Loader2 } from 'lucide-react';
 import {
-  ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, User,
-  TrendingUp, RefreshCw, Layers, Search, Loader2, ShieldCheck, WalletCards
-} from 'lucide-react';
+  TbNavigation, TbTriangle, TbTriangleInverted, TbHistory, TbGridDots, TbHeadset, TbBell, TbCopy, TbUser, TbArrowUpRight, TbArrowDownLeft
+} from 'react-icons/tb';
 import { useSecurity } from '@/context/SecurityContext';
 import { useTheme } from '@/context/ThemeContext';
-import { WalletModal } from '@/components/security/WalletModal';
-import { ConnectWalletModal } from '@/components/dashboard/ConnectWalletModal';
+
 import { ReceiveModal } from '@/components/dashboard/ReceiveModal';
 import { SendModal } from '@/components/dashboard/SendModal';
-import { SwapModal } from '@/components/dashboard/SwapModal';
 import { AssetIcon } from '@/components/dashboard/AssetIcon';
+import { ManageAssetsModal } from '@/components/dashboard/ManageAssetsModal';
+import { CRYPTO_ASSETS } from '@/lib/constants';
 import { toast } from 'sonner';
 
-// ✅ FIX 1: Fallback prices prevent "$0.00" balance errors if API fails
 const FALLBACK_PRICES: Record<string, number> = {
-  ETH: 2950.00, BTC: 65000.00, SOL: 145.00, TRX: 0.15, USDT: 1.00
+  ETH: 2950.00, BTC: 65000.00, SOL: 145.00, TRX: 0.15, USDT: 1.00,
+  BNB: 580.00, MATIC: 0.50, AVAX: 25.00, USDC: 1.00
 };
 
 export default function DashboardPage() {
@@ -30,28 +30,43 @@ export default function DashboardPage() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [setupComplete, setSetupComplete] = useState(false);
 
-  // DATA
   const [userId, setUserId] = useState<string>('...');
   const [wallet, setWallet] = useState<any>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
 
-  // STATS
-  const [dailyIncome, setDailyIncome] = useState(0);
-  const [dailyExpense, setDailyExpense] = useState(0);
-
-  // PRICES
   const [prices, setPrices] = useState<Record<string, number>>(FALLBACK_PRICES);
+  const [priceChanges, setPriceChanges] = useState<Record<string, number>>({
+     ETH: 2.704, BTC: 0.039, SOL: 2.216, TRX: -0.31, BNB: 1.448, MATIC: 0, AVAX: 0, USDT: 0, USDC: 0
+  }); 
 
-  const [hideBalance, setHideBalance] = useState(false);
-
-  // MODALS
   const [showQR, setShowQR] = useState(false);
   const [showSend, setShowSend] = useState(false);
-  const [showSwap, setShowSwap] = useState(false);
-  const [showConnect, setShowConnect] = useState(false);
+  const [showManageAssets, setShowManageAssets] = useState(false);
   const [activeAsset, setActiveAsset] = useState('ETH');
+  
+  const [isOnline, setIsOnline] = useState(true);
 
-  // 1. FETCH DATA
+  useEffect(() => {
+    setIsOnline(typeof window !== 'undefined' ? navigator.onLine : true);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const [visibleAssets, setVisibleAssets] = useState<string[]>([]);
+  useEffect(() => {
+    const stored = localStorage.getItem('visible_assets');
+    if (stored) {
+      setVisibleAssets(JSON.parse(stored));
+    } else {
+      setVisibleAssets(['BTC', 'ETH', 'USDT', 'USDC', 'SOL']);
+    }
+  }, []);
+
   const fetchData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -59,26 +74,20 @@ export default function DashboardPage() {
 
       const { data: walletData } = await supabase.from('wallets').select('*').eq('user_id', user.id).single();
       if (walletData) {
-        setWallet(walletData);
-        setUserId(walletData.readable_id || 'Generating...');
+        setWallet(walletData); 
+        setUserId(walletData.readable_id || 'Generating...'); 
+        if (!walletData.trx_address) { 
+          fetch('/api/wallet/upgrade', { method: 'POST', body: JSON.stringify({ userId: user.id }) })
+          .then(() => supabase.from('wallets').select('*').eq('user_id', user.id).single())
+          .then(({ data: updatedW }) => { if (updatedW) setWallet(updatedW); }); 
+        }
       }
-
-      const { data: txData } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      setTransactions(txData || []);
-
     } catch (e) { console.error(e); } finally { setCheckingAuth(false); }
   };
 
-  // 2. FETCH PRICES
   const fetchPrices = async () => {
     try {
-      const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin,solana,tron&vs_currencies=usd');
+      const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin,solana,tron,binancecoin,polygon-ecosystem-token,avalanche-2&vs_currencies=usd&include_24hr_change=true');
       if (!res.ok) throw new Error("API Limit");
       const data = await res.json();
       setPrices({
@@ -86,287 +95,227 @@ export default function DashboardPage() {
         BTC: data.bitcoin?.usd || FALLBACK_PRICES.BTC,
         SOL: data.solana?.usd || FALLBACK_PRICES.SOL,
         TRX: data.tron?.usd || FALLBACK_PRICES.TRX,
-        USDT: 1.00
+        BNB: data.binancecoin?.usd || FALLBACK_PRICES.BNB,
+        MATIC: data['polygon-ecosystem-token']?.usd || FALLBACK_PRICES.MATIC,
+        AVAX: data['avalanche-2']?.usd || FALLBACK_PRICES.AVAX,
+        USDC: 1.00, USDT: 1.00
       });
-    } catch (e) {
-      // Keep fallback prices if API fails
-      console.log("Using fallback prices");
-    }
+      setPriceChanges({
+        ETH: data.ethereum?.usd_24h_change || 2.704,
+        BTC: data.bitcoin?.usd_24h_change || 0.039,
+        SOL: data.solana?.usd_24h_change || 2.216,
+        TRX: data.tron?.usd_24h_change || -0.31,
+        BNB: data.binancecoin?.usd_24h_change || 1.448,
+        MATIC: data['polygon-ecosystem-token']?.usd_24h_change || 0,
+        AVAX: data['avalanche-2']?.usd_24h_change || 0,
+        USDC: 0, USDT: 0
+      });
+    } catch (e) { console.log("Using fallback prices"); }
   };
 
-  // 3. LIVE SYNC (Heartbeat)
   useEffect(() => {
     if (!wallet?.user_id) return;
-
     const syncChain = async () => {
       try {
-        // Sync ETH
-        const resEth = await fetch('/api/wallet/sync', {
-          method: 'POST',
-          body: JSON.stringify({ userId: wallet.user_id, asset: 'ETH' })
-        });
-        const dataEth = await resEth.json();
-
-        // Sync USDT
-        const resUsdt = await fetch('/api/wallet/sync', {
-          method: 'POST',
-          body: JSON.stringify({ userId: wallet.user_id, asset: 'USDT' })
-        });
-        const dataUsdt = await resUsdt.json();
-
-        const isEthDeposit = dataEth.success && dataEth.message && dataEth.message.includes("Deposit");
-        const isUsdtDeposit = dataUsdt.success && dataUsdt.message && dataUsdt.message.includes("Deposit");
-
-        // Only reload if a NEW deposit was actually detected/processed
-        if (isEthDeposit || isUsdtDeposit) {
+        const resEth = await fetch('/api/wallet/sync', { method: 'POST', body: JSON.stringify({ userId: wallet.user_id, asset: 'ETH' }) });
+        const resUsdt = await fetch('/api/wallet/sync', { method: 'POST', body: JSON.stringify({ userId: wallet.user_id, asset: 'USDT' }) });
+        const dataEth = await resEth.json(); const dataUsdt = await resUsdt.json();
+        if ((dataEth.success && dataEth.message?.includes("Deposit")) || (dataUsdt.success && dataUsdt.message?.includes("Deposit"))) {
           toast.success("New Deposit Received!");
           fetchData();
         }
-      } catch (e) { /* Silent */ }
+      } catch (e) { console.error("Sync error"); }
     };
-
-    syncChain(); // Check immediately
-    const interval = setInterval(syncChain, 30000); // Then every 30s
+    syncChain();
+    const interval = setInterval(syncChain, 30000);
     return () => clearInterval(interval);
   }, [wallet?.user_id]);
 
   useEffect(() => {
     fetchData();
     fetchPrices();
-  }, [requiresSetup]);
+    const interval = setInterval(fetchPrices, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // 4. RECALCULATE STATS
-  useEffect(() => {
-    if (!transactions.length) return;
-    let inc = 0;
-    let exp = 0;
-    transactions.forEach(tx => {
-      const symbol = tx.currency?.toUpperCase();
-      let price = prices[symbol] || 0;
-      if (symbol === 'USDT') price = 1;
-      const val = Math.abs(Number(tx.amount)) * price;
-      if (tx.type === 'deposit') inc += val;
-      if (tx.type === 'withdrawal') exp += val;
-    });
-    setDailyIncome(inc);
-    setDailyExpense(exp);
-  }, [transactions, prices]);
+  const getBalance = (assetId: string) => {
+    if (!wallet) return 0;
+    const map: Record<string, number> = {
+      'BTC': wallet.btc_balance, 'ETH': wallet.balance, 'USDT': wallet.usdt_balance,
+      'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance,
+      'BNB': wallet.bnb_balance, 'MATIC': wallet.matic_balance,
+      'AVAX': wallet.avax_balance, 'USDC': wallet.usdc_balance
+    };
+    return map[assetId] || 0;
+  };
 
-  const totalBalance = wallet ?
-    ((wallet.balance || 0) * (prices.ETH || 0)) +
-    ((wallet.btc_balance || 0) * (prices.BTC || 0)) +
-    ((wallet.sol_balance || 0) * (prices.SOL || 0)) +
-    ((wallet.trx_balance || 0) * (prices.TRX || 0)) +
-    ((wallet.usdt_balance || 0))
-    : 0;
+  const totalBalance = CRYPTO_ASSETS.reduce((acc, asset) => {
+    return acc + (getBalance(asset.id) * (prices[asset.id] || 0));
+  }, 0);
 
-  const handleComingSoon = () => toast.info("Feature coming soon");
-  const goToWallet = () => router.push('/dashboard/wallet');
-
-  if (checkingAuth || isSecurityLoading) {
-    return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><Loader2 className="animate-spin text-emerald-500" size={40} /></div>;
+  if (isSecurityLoading || checkingAuth) {
+    return <div className="min-h-[80vh] flex items-center justify-center p-4"><Loader2 className="animate-spin text-[#10b981]" size={32} /></div>;
   }
 
   const shouldShowSetup = (!wallet || requiresSetup) && !setupComplete;
-
   if (shouldShowSetup) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-        <WalletModal onSuccess={() => { setSetupComplete(true); window.location.reload(); }} />
+      <div className="min-h-screen bg-[#111111] flex items-center justify-center p-4">
+        
       </div>
     );
   }
 
-  const isDark = theme === 'dark';
+  const topGainers = [...CRYPTO_ASSETS]
+    .filter(a => !a.id.includes('USD'))
+    .sort((a, b) => (priceChanges[b.id] || 0) - (priceChanges[a.id] || 0))
+    .slice(0, 7);
+
+  const sortedAssets = CRYPTO_ASSETS.sort((a, b) => {
+     const balA = getBalance(a.id);
+     const balB = getBalance(b.id);
+     if (balA > 0 && balB === 0) return -1;
+     if (balB > 0 && balA === 0) return 1;
+     return 0; 
+  });
 
   return (
-    <div className={`p-4 md:p-8 pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-[max(env(safe-area-inset-top),2rem)] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-28 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+    <div className="w-full flex flex-col gap-[2px] flex-1 bg-transparent">
 
       {/* MODALS */}
       {showQR && wallet && <ReceiveModal asset={activeAsset} userAddress={wallet.address} onClose={() => setShowQR(false)} />}
+      {showSend && <SendModal wallet={wallet} prices={prices} onClose={() => setShowSend(false)} onSuccess={fetchData} />}
+      {showManageAssets && <ManageAssetsModal onClose={() => setShowManageAssets(false)} onUpdate={setVisibleAssets} />}
 
-      {showSend && (
-        <SendModal
-          wallet={wallet}
-          prices={prices}
-          onClose={() => setShowSend(false)}
-          onSuccess={fetchData}
-        />
-      )}
-
-      {showSwap && <SwapModal initialAsset="ETH" onClose={() => setShowSwap(false)} onSuccess={fetchData} />}
-
-      {showConnect && <ConnectWalletModal onClose={() => setShowConnect(false)} onSuccess={fetchData} />}
-
-      {/* HEADER */}
-      <div className="hidden md:flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
-          <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Welcome back, here is your portfolio.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* ✨ PREMIUM DESKTOP CONNECT BUTTON */}
-          <button
-            onClick={() => setShowConnect(true)}
-            className={`group flex items-center gap-2.5 px-5 py-2.5 rounded-full font-bold text-sm transition-all border ${isDark
-                ? 'bg-[#0a0a0a] border-white/10 text-zinc-300 hover:text-white hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-emerald-500/30 hover:shadow-sm'
-              }`}
-          >
-            <div className={`p-1 rounded-full transition-colors ${isDark ? 'bg-white/5 group-hover:bg-emerald-500/20' : 'bg-slate-100 group-hover:bg-emerald-50'}`}>
-              <WalletCards size={14} className={`transition-colors ${isDark ? 'text-zinc-400 group-hover:text-emerald-400' : 'text-slate-400 group-hover:text-emerald-600'}`} />
-            </div>
-            Connect Wallet
-          </button>
-
-          <div className={`flex items-center gap-2 px-4 py-2.5 rounded-full border ${isDark ? 'bg-zinc-900 border-white/5' : 'bg-white border-slate-200'}`}>
-            <Search size={16} className="text-zinc-400" />
-            <input type="text" placeholder="Search assets..." className="bg-transparent outline-none text-sm w-48 placeholder:text-zinc-500" />
-          </div>
-          <button onClick={() => router.push('/dashboard/profile')} className={`p-2.5 rounded-full border transition-colors ${isDark ? 'border-white/10 text-zinc-400 hover:text-white' : 'border-slate-200 text-slate-500 hover:text-slate-900'}`}><User size={18} /></button>
-        </div>
-      </div>
-
-      {/* MOBILE HEADER */}
-      <div className="lg:hidden flex items-center justify-between mb-8">
-        <div className="flex flex-col">
-          <span className="font-bold text-xl tracking-tight">CORE</span>
-          <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Portfolio</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => router.push('/dashboard/profile')} className={`p-2 rounded-full border transition-colors ${isDark ? 'border-white/10 text-zinc-400 hover:text-white bg-[#0a0a0a]' : 'border-slate-200 text-slate-500 hover:text-slate-900 bg-white'}`}>
-            <User size={20} />
-          </button>
-        </div>
-      </div>
-
-      {/* BALANCE CARD */}
-      <div className="relative rounded-3xl p-8 md:p-10 mb-8 shadow-2xl overflow-hidden group">
-        <div className={`absolute inset-0 transition-colors duration-500 ${isDark ? 'bg-gradient-to-r from-zinc-900 to-[#0c0c0c]' : 'bg-gradient-to-r from-slate-900 to-slate-800'}`} />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row justify-between gap-8 text-white">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-bold font-mono tracking-wide text-white/90">{userId}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/50 text-sm ml-1 cursor-pointer hover:text-white transition-colors" onClick={() => setHideBalance(!hideBalance)}>
-                {hideBalance ? <EyeOff size={14} /> : <Eye size={14} />}
-                <span>Total Balance</span>
-              </div>
-            </div>
-
-            <h1 className="text-[clamp(2.5rem,8vw,4rem)] font-black mb-6 tracking-tighter truncate max-w-full" title={`$${totalBalance.toLocaleString()}`}>
-              {hideBalance ? '••••••' : `$${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            </h1>
-
-            <div
-              onClick={() => { if (wallet) { navigator.clipboard.writeText(wallet.address); toast.success("Address Copied"); } }}
-              className="flex items-center gap-2 bg-black/20 w-fit px-4 py-2 rounded-xl border border-white/5 hover:bg-black/40 cursor-pointer transition-all active:scale-95"
+      {/* SECTION B: MAIN BALANCE CARD */}
+      <div className="p-6 bg-[#1e1e1e] overflow-hidden">
+         <div className="flex flex-col mb-2">
+            <h3 className="text-[#10b981] font-bold text-base tracking-tight mb-1">Wallet</h3>
+            <div 
+               onClick={() => { navigator.clipboard.writeText(userId); toast.success("ID Copied"); }}
+               className="flex items-center gap-1.5 text-[11px] font-medium text-white cursor-pointer hover:text-gray-300 transition-colors w-fit"
             >
-              <Copy size={14} className="text-white/60" />
-              <code className="text-sm text-white/80 font-mono">
-                {wallet ? `${wallet.address.slice(0, 10)}...${wallet.address.slice(-8)}` : 'Generating...'}
-              </code>
+               <span className="font-mono">{userId}</span>
+               <TbCopy size={14} className="text-white" />
             </div>
-          </div>
+         </div>
 
-          <div className="flex flex-col justify-between gap-6 min-w-[280px]">
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
-              <div>
-                <p className="text-xs text-white/50 mb-1 font-bold uppercase">Income</p>
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-lg"><ArrowDownLeft size={18} /> ${dailyIncome.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-              </div>
-              <div className="border-l border-white/10 pl-4">
-                <p className="text-xs text-white/50 mb-1 font-bold uppercase">Expense</p>
-                <div className="flex items-center gap-2 text-red-400 font-bold text-lg"><ArrowUpRight size={18} /> ${dailyExpense.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={goToWallet} className="bg-white text-slate-900 hover:bg-zinc-200 font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95 text-sm md:text-base">Receive</button>
-              <button onClick={goToWallet} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 text-sm md:text-base">Send</button>
-            </div>
-          </div>
-        </div>
+         <div className="text-left mt-2 mb-8 w-full">
+            <h1 className="text-[28px] md:text-[30px] font-medium text-white break-all leading-tight">
+              ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h1>
+         </div>
+
+         <div className="flex items-center justify-between w-full px-6 md:px-16 mt-2">
+            {[
+               { icon: <TbArrowUpRight size={20} strokeWidth={2} />, label: "Send", action: () => router.push('/dashboard/assets') },
+               { icon: <TbArrowDownLeft size={20} strokeWidth={2} />, label: "Receive", action: () => router.push('/dashboard/assets') },
+               { icon: <TbHistory size={20} strokeWidth={2} />, label: "History", action: () => router.push('/dashboard/transactions') },
+               { icon: <TbGridDots size={20} strokeWidth={2} />, label: "More", action: () => toast.info("More features coming") }
+            ].map((btn, i) => (
+                 <button key={i} onClick={btn.action} className="flex flex-col items-center gap-2 group">
+                    <div className="w-[38px] h-[38px] rounded-full bg-[#111111] flex items-center justify-center text-white hover:bg-[#252525] transition shadow-sm">
+                      {btn.icon}
+                    </div>
+                    <span className="text-[11px] font-semibold text-white tracking-wide group-hover:text-neutral-300 transition-colors">{btn.label}</span>
+                 </button>
+              ))}
+         </div>
       </div>
 
-      <div className={`grid grid-cols-4 gap-2 mb-8`}>
-        <ActionButton icon={<RefreshCw size={18} />} label="Swap" onClick={() => setShowSwap(true)} active theme={theme} />
-        <ActionButton icon={<WalletCards size={18} className="text-emerald-500" />} label="Connect" onClick={() => setShowConnect(true)} theme={theme} />
-        <ActionButton icon={<TrendingUp size={18} />} label="Stake" onClick={handleComingSoon} theme={theme} />
-        <ActionButton icon={<Layers size={18} />} label="Sell" onClick={handleComingSoon} theme={theme} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
-        <div className="lg:col-span-2">
-          <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Recent Activity</h3>
-          <div className={`border rounded-2xl overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
-            <table className="w-full text-left">
-              <thead className={`text-xs uppercase font-bold ${isDark ? 'bg-white/5 text-zinc-500' : 'bg-slate-50 text-slate-500'}`}>
-                <tr><th className="px-6 py-4">Type</th><th className="px-6 py-4">Asset</th><th className="px-6 py-4 text-right">Value</th></tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-white/5' : 'divide-slate-100'}`}>
-                {transactions.length > 0 ? transactions.slice(0, 5).map((tx) => (
-                  <tr key={tx.id} className={`${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-slate-50'} transition-colors`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-500' :
-                            tx.type === 'swap' ? 'bg-purple-500/10 text-purple-500' : 'bg-zinc-500/10 text-zinc-500'
-                          }`}>
-                          {tx.type === 'deposit' ? <ArrowDownLeft size={14} /> : tx.type === 'swap' ? <RefreshCw size={14} /> : <ArrowUpRight size={14} />}
+      {/* SECTION C: TOP GAINERS */}
+      <div className="p-5 bg-[#1e1e1e]">
+         <h3 className="text-[15px] font-bold text-white mb-4">Top Gainers</h3>
+         
+         <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide snap-x">
+            {topGainers.map((asset) => {
+               const change = priceChanges[asset.id] || 0;
+               const isPositive = change >= 0;
+               return (
+                  <div key={asset.id} className="snap-start flex-shrink-0 w-[160px] p-4 rounded-2xl bg-[#252525] border border-[#333333] shadow-sm">
+                     <div className="flex items-center gap-2.5 mb-3">
+                        <div className="w-8 h-8 bg-[#1e1e1e] rounded-full p-1"><AssetIcon symbol={asset.id.split('_')[0]} size="sm" /></div>
+                        <div className="flex flex-col">
+                           <span className="text-[12px] font-bold text-white uppercase tracking-wider">{asset.id}</span>
+                           <span className={`text-[10px] font-bold tracking-tight ${isPositive ? '+' : ''}`}>
+                              {isPositive ? '+' : ''} {Math.abs(change).toFixed(3)}%
+                           </span>
                         </div>
-                        <span className="font-bold text-sm capitalize">{tx.type}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5"><AssetIcon symbol={tx.currency} size="sm" /></div>
-                        <span className="text-sm font-bold">{tx.currency}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm font-mono">
-                      {tx.type === 'deposit' ? '+' : '-'}{Math.abs(tx.amount)}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan={3} className="px-6 py-12 text-center text-zinc-500 text-sm">No recent transactions</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                     </div>
+                     <div className="text-[14px] font-bold text-white tracking-tight">
+                        ${(prices[asset.id] || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                     </div>
+                  </div>
+               )
+            })}
+         </div>
+      </div>
 
-        <div>
-          <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Your Assets</h3>
-          <div className="space-y-3">
-            <AssetRow symbol="ETH" name="Ethereum" balance={wallet?.balance} price={prices.ETH} theme={theme} onClick={goToWallet} />
-            <AssetRow symbol="BTC" name="Bitcoin" balance={wallet?.btc_balance} price={prices.BTC} theme={theme} onClick={goToWallet} />
-            <AssetRow symbol="USDT" name="Tether" balance={wallet?.usdt_balance} price={1.00} theme={theme} onClick={goToWallet} />
-            <AssetRow symbol="SOL" name="Solana" balance={wallet?.sol_balance} price={prices.SOL} theme={theme} onClick={goToWallet} />
-            <AssetRow symbol="TRX" name="Tron" balance={wallet?.trx_balance} price={prices.TRX} theme={theme} onClick={goToWallet} />
-          </div>
-        </div>
+      {/* SECTION D: ASSETS LIST */}
+      <div className="w-full bg-[#1e1e1e] flex-1 min-h-[300px]">
+         <div className="flex items-center justify-between p-5 border-b border-[#111111]">
+            <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">NAME</div>
+            <div className="flex flex-col items-end">
+               <button onClick={() => setShowManageAssets(true)} className="text-[#10b981] text-[13px] font-bold hover:opacity-80 transition-opacity">
+                  +Add Asset
+               </button>
+               <span className="text-[10px] font-medium text-neutral-500 mt-1 uppercase tracking-wider">LAST PRICE CHANGE</span>
+            </div>
+         </div>
+
+         <div className="flex flex-col">
+            {sortedAssets.map(asset => {
+               const balance = getBalance(asset.id);
+               const price = asset.id === 'USDT' || asset.id === 'USDC' ? 1 : (prices[asset.id] || 0);
+               const change = priceChanges[asset.id] || 0;
+               const isPositive = change >= 0;
+               
+               return (
+                  <div 
+                     key={asset.id}
+                     onClick={() => router.push(`/dashboard/wallet/${asset.id}`)}
+                     className="w-full flex items-center justify-between px-5 py-4 bg-[#1e1e1e] border-b border-[#111111] cursor-pointer hover:bg-[#252525] transition-colors"
+                  >
+                     <div className="flex items-center gap-4">
+                        <div className="w-9 h-9"><AssetIcon symbol={asset.id.split('_')[0]} size="sm" /></div>
+                        <div className="text-left flex flex-col">
+                           <h3 className="font-bold text-[14px] text-white uppercase tracking-wide">{asset.name}</h3>
+                           <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[12px] font-bold tracking-tight text-neutral-400">
+                                 ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                              </span>
+                              <span className={`text-[11px] font-bold tracking-tight ${isPositive ? '+' : ''}`}>
+                                 {isPositive ? '+' : ''} {Math.abs(change).toFixed(3)}%
+                              </span>
+                           </div>
+                        </div>
+                     </div>
+                     
+                     <div className="text-right flex flex-col justify-center items-end">
+                        <div className="font-bold tracking-tight text-[14px] text-white font-sans">
+                           {balance > 0 ? balance.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0.0000'}
+                        </div>
+                        <div className="text-[12px] font-bold tracking-tight text-neutral-500 mt-0.5">
+                           ${balance > 0 ? (balance * price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                        </div>
+                     </div>
+                  </div>
+               )
+            })}
+         </div>
+
+         {/* Bottom Manage Asset Button */}
+         <div className="w-full bg-[#1e1e1e] p-5 flex items-center">
+            <button 
+               onClick={() => setShowManageAssets(true)}
+               className="text-[#888888] font-bold text-[14px] hover:text-white transition-colors flex items-center gap-1"
+            >
+               Manage Asset <span className="text-lg leading-none">+</span>
+            </button>
+         </div>
       </div>
     </div>
   );
 }
 
-function ActionButton({ icon, label, onClick, active, theme }: any) {
-  const isDark = theme === 'dark';
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-2 py-4 rounded-2xl transition-all active:scale-95 border ${isDark ? (active ? 'bg-white/10 border-white/10 text-white' : 'bg-[#0a0a0a] border-white/5 text-zinc-400 hover:bg-white/5 hover:text-zinc-200') : (active ? 'bg-slate-100 border-slate-200 text-slate-900' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50')}`}>{icon}<span className="text-xs font-bold">{label}</span></button>
-  )
-}
 
-function AssetRow({ symbol, name, balance, price, theme, onClick }: any) {
-  const isDark = theme === 'dark';
-  const val = (balance || 0) * (price || 0);
-  return (
-    <div onClick={onClick} className={`p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-all border ${isDark ? 'bg-[#0a0a0a] border-white/5 hover:bg-white/5' : 'bg-white border-slate-200 shadow-sm hover:bg-slate-50'}`}>
-      <div className="flex items-center gap-3"><div className="w-10 h-10"><AssetIcon symbol={symbol} size="md" /></div><div><div className="font-bold text-sm">{name}</div><div className="text-xs text-zinc-500">${price?.toLocaleString()}</div></div></div>
-      <div className="text-right"><div className="font-mono text-sm font-bold">${val.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div><div className="text-xs text-zinc-500">{balance?.toFixed(4) || '0.0000'} {symbol}</div></div>
-    </div>
-  )
-}

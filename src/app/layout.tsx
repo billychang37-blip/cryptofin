@@ -22,19 +22,35 @@ export const viewport: Viewport = {
 
 // 2. APP METADATA
 export const metadata: Metadata = {
-  title: "Corecoin | Beyond Digital Assets",
+  title: "Cryptofin | Beyond Digital Assets",
   description: "The secure, custodial standard for the digital economy.",
   manifest: "/manifest.json", 
+  openGraph: {
+    title: "Cryptofin | Beyond Digital Assets",
+    description: "The secure, custodial standard for the digital economy.",
+    images: [
+      {
+        url: "/hero_main.png",
+        width: 1200,
+        height: 630,
+        alt: "Cryptofin Meta Image",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cryptofin | Beyond Digital Assets",
+    description: "The secure, custodial standard for the digital economy.",
+    images: ["/hero_main.png"],
+  },
   icons: {
-    // ✅ Browser Tab: Uses your crisp SVG
-    icon: '/icon.svg', 
-    // ✅ iPhone Home Screen: MUST be PNG (SVG won't work here)
-    apple: '/icon-192.png', 
+    icon: '/hero_main.png', 
+    apple: '/hero_main.png', 
   },
   appleWebApp: {
-    capable: true, // Enables "App Mode"
-    statusBarStyle: "black-translucent", // Glassy top bar
-    title: "CoreCoin",
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Cryptofin",
   },
   formatDetection: {
     telephone: false,
@@ -68,3 +84,6 @@ export default function RootLayout({
     </html>
   );
 }
+
+
+

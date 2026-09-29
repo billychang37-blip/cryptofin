@@ -14,7 +14,7 @@ export function Features() {
         </h2>
         <p className="text-zinc-400 text-lg max-w-xl leading-relaxed">
           Everything you need to build wealth. From advanced trading tools to global payments, 
-          Corecoin is the infrastructure for your financial future.
+          Cryptofin is the infrastructure for your financial future.
         </p>
       </div>
 
@@ -22,13 +22,13 @@ export function Features() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* 1. MAIN CARD (Large - Spans 2 cols) */}
-        <div className="md:col-span-2 bg-zinc-900/30 border border-white/5 p-8 rounded-3xl hover:border-emerald-500/20 transition-all group relative overflow-hidden">
+        <div className="md:col-span-2 bg-zinc-900/30 border border-white/5 p-8 rounded-3xl hover:border-primary/20 transition-all group relative overflow-hidden">
            <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
-              <PieChart size={140} className="text-emerald-500" />
+              <PieChart size={140} className="text-primary" />
            </div>
            <div className="relative z-10">
-             <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border border-emerald-500/20">
-               <Layers className="text-emerald-500" size={24} />
+             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-6 border border-primary/20">
+               <Layers className="text-primary" size={24} />
              </div>
              <h3 className="text-2xl font-bold text-white mb-3">Unified Asset Dashboard</h3>
              <p className="text-zinc-400 text-base leading-relaxed max-w-md">
@@ -38,9 +38,9 @@ export function Features() {
              </p>
              
              {/* Mini UI Element: PnL Tag */}
-             <div className="mt-8 inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span className="text-xs font-bold text-emerald-400">Live PnL Updates</span>
+             <div className="mt-8 inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                <span className="text-xs font-bold text-primary">Live PnL Updates</span>
              </div>
            </div>
         </div>
@@ -80,7 +80,7 @@ export function Features() {
              <div className="text-purple-400 mb-1">// Fetch Price</div>
              <div className="flex justify-between">
                 <span>GET /api/v3/ticker</span>
-                <span className="text-emerald-500">200 OK</span>
+                <span className="text-primary">200 OK</span>
              </div>
            </div>
         </div>
@@ -106,10 +106,10 @@ export function Features() {
              <div className="w-full md:w-auto min-w-[280px] bg-black/40 border border-white/5 rounded-2xl p-5 backdrop-blur-sm">
                 <div className="flex justify-between text-xs text-zinc-500 mb-2 uppercase tracking-wider font-bold">
                    <span>Reserve Ratio</span>
-                   <span className="text-emerald-500 flex items-center gap-1"><Shield size={10}/> Verified</span>
+                   <span className="text-primary flex items-center gap-1"><Shield size={10}/> Verified</span>
                 </div>
                 <div className="w-full bg-zinc-800/50 rounded-full h-2 overflow-hidden mb-6">
-                   <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 w-full h-full"></div>
+                   <div className="bg-gradient-to-r from-emerald-600 to-primary-hover w-full h-full"></div>
                 </div>
                 <div className="flex justify-between gap-4">
                    <div className="text-center">
