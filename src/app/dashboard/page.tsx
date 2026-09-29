@@ -153,10 +153,6 @@ export default function DashboardPage() {
     return acc + (getBalance(asset.id) * (prices[asset.id] || 0));
   }, 0);
 
-  if (isSecurityLoading || checkingAuth) {
-    return <div className="min-h-[80vh] flex items-center justify-center p-4"><Loader2 className="animate-spin text-[#10b981]" size={32} /></div>;
-  }
-
   const shouldShowSetup = (!wallet || requiresSetup) && !setupComplete;
   
   useEffect(() => {
@@ -164,6 +160,10 @@ export default function DashboardPage() {
       router.push('/auth/recovery-phrase');
     }
   }, [requiresSetup, checkingAuth, router]);
+
+  if (isSecurityLoading || checkingAuth) {
+    return <div className="min-h-[80vh] flex items-center justify-center p-4"><Loader2 className="animate-spin text-[#10b981]" size={32} /></div>;
+  }
 
   if (shouldShowSetup) {
     return (
