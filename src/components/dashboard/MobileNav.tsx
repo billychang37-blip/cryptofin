@@ -33,7 +33,7 @@ export function MobileNav() {
     },
     { 
       name: 'Logout', 
-      action: () => { /* Handle later */ },
+      action: handleLogout,
       icon: <Power size={18} />
     },
   ];
