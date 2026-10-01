@@ -111,9 +111,9 @@ export default function AdminAddFundsPage() {
           <a href="/admin/deposits" className="text-[#3498db] text-xs font-bold hover:underline">Go to Manage Deposits</a>
         </div>
         
-        <form onSubmit={handleAddFunds} className="p-6 p-8 space-y-6">
-          
-          <div className="flex gap-4 mb-4">
+                  <form onSubmit={handleAddFunds} className="p-6 p-8 space-y-6">
+            
+            <div className="flex gap-4 mb-4">
               <div className="flex-1">
                 <label className="block text-sm font-bold text-gray-700 mb-2">Asset to Fund: <span className="text-red-500">*</span></label>
                 <select 
@@ -142,20 +142,9 @@ export default function AdminAddFundsPage() {
                 </select>
               </div>
             </div>
-                  className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-sm text-gray-700"
-                >
-                  <option value="usdt_erc20">USDT (ERC20)</option>
-                  <option value="usdt_trc20">USDT (TRC20)</option>
-                  <option value="usdt_bep20">USDT (BEP20)</option>
-                  <option value="usdc_solana">USDC (Solana)</option>
-                  <option value="usdc_bep20">USDC (BEP20)</option>
-                </select>
-              </div>
-            </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">User: <span className="text-red-500">*</span></label>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">User: <span className="text-red-500">*</span></label>
             <div 
               onClick={() => setShowUserModal(true)}
               className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 text-sm text-gray-700 cursor-pointer flex justify-between items-center hover:border-[#3498db] transition-colors"
