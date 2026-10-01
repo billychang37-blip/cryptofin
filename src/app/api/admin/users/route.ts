@@ -10,8 +10,6 @@ const supabaseAdmin = createClient(
 
 export async function GET(request: Request) {
   try {
-    // In a real app, verify the request has a valid admin session token here.
-    // For now, we use the service role key to fetch all users bypassing RLS.
     const { data: users, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -19,6 +17,16 @@ export async function GET(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const { data: wallets, error: walletsError } = await supabaseAdmin
+      .from('wallets')
+      .select('*');
+
+    if (!walletsError && wallets) {
+      for (const user of users) {
+        user.wallet = wallets.find(w => w.user_id === user.id) || null;
+      }
     }
 
     return NextResponse.json({ users });

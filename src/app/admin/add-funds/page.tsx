@@ -9,7 +9,7 @@ export default function AdminAddFundsPage() {
   const [selectedUser, setSelectedUser] = useState("");
   
   // Wallet selection
-  const [walletType, setWalletType] = useState("main"); // 'main', 'btc', 'eth', 'usdt'
+  const [walletType, setWalletType] = useState("BTC"); // 'main', 'btc', 'eth', 'usdt'
   
   // Form fields
   const [amount, setAmount] = useState("");
@@ -113,27 +113,26 @@ export default function AdminAddFundsPage() {
         
         <form onSubmit={handleAddFunds} className="p-6 p-8 space-y-6">
           
-          <div className="flex flex-col mb-4">
-            <label className="text-sm font-bold text-gray-700 mb-2">Fund Type: <span className="text-red-500">*</span></label>
-            <div className="flex space-x-6 mt-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="walletType" value="main" checked={walletType === 'main'} onChange={() => setWalletType('main')} className="w-4 h-4 text-[#3498db]" />
-                <span className="text-sm font-medium text-gray-600">Main Wallet (Fiat USD)</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="walletType" value="crypto" checked={walletType.startsWith('usd')} onChange={() => setWalletType('usdt_erc20')} className="w-4 h-4 text-[#3498db]" />
-                <span className="text-sm font-medium text-gray-600">Crypto Deposit</span>
-              </label>
-            </div>
-          </div>
-
-          {walletType.startsWith('usd') && (
-            <div className="flex gap-4 mb-4">
+          <div className="flex gap-4 mb-4">
               <div className="flex-1">
-                <label className="block text-sm font-bold text-gray-700 mb-2">Crypto Asset: <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Asset to Fund: <span className="text-red-500">*</span></label>
                 <select 
                   value={walletType}
                   onChange={e => setWalletType(e.target.value)}
+                  className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-sm text-gray-700"
+                >
+                  <option value="BTC">Bitcoin (BTC)</option>
+                  <option value="ETH">Ethereum (ETH)</option>
+                  <option value="USDT">Tether (USDT)</option>
+                  <option value="USDC">USD Coin (USDC)</option>
+                  <option value="BNB">Binance Coin (BNB)</option>
+                  <option value="SOL">Solana (SOL)</option>
+                  <option value="TRX">Tron (TRX)</option>
+                  <option value="MATIC">Polygon (MATIC)</option>
+                  <option value="AVAX">Avalanche (AVAX)</option>
+                </select>
+              </div>
+            </div>
                   className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-sm text-gray-700"
                 >
                   <option value="usdt_erc20">USDT (ERC20)</option>
