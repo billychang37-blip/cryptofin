@@ -123,8 +123,17 @@ export default function AdminAddFundsPage() {
                 >
                   <option value="BTC">Bitcoin (BTC)</option>
                   <option value="ETH">Ethereum (ETH)</option>
-                  <option value="USDT">Tether (USDT)</option>
-                  <option value="USDC">USD Coin (USDC)</option>
+                  <option value="USDT">Tether USDT (ERC-20)</option>
+                  <option value="USDT_TRX">Tether USDT (TRC-20)</option>
+                  <option value="USDT_BNB">Tether USDT (BEP-20)</option>
+                  <option value="USDT_SOL">Tether USDT (Solana)</option>
+                  <option value="USDT_MATIC">Tether USDT (Polygon)</option>
+                  <option value="USDT_AVAX">Tether USDT (Avalanche)</option>
+                  <option value="USDC">USD Coin USDC (ERC-20)</option>
+                  <option value="USDC_BNB">USD Coin USDC (BEP-20)</option>
+                  <option value="USDC_SOL">USD Coin USDC (Solana)</option>
+                  <option value="USDC_MATIC">USD Coin USDC (Polygon)</option>
+                  <option value="USDC_AVAX">USD Coin USDC (Avalanche)</option>
                   <option value="BNB">Binance Coin (BNB)</option>
                   <option value="SOL">Solana (SOL)</option>
                   <option value="TRX">Tron (TRX)</option>

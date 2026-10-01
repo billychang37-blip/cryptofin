@@ -139,19 +139,28 @@ export default function DashboardPage() {
   }, []);
 
   const getBalance = (assetId: string) => {
-    if (!wallet) return 0;
-    const map: Record<string, number> = {
-      'BTC': wallet.btc_balance, 'ETH': wallet.balance, 'USDT': wallet.usdt_balance,
-      'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance,
-      'BNB': wallet.bnb_balance, 'MATIC': wallet.matic_balance,
-      'AVAX': wallet.avax_balance, 'USDC': wallet.usdc_balance
+      if (!wallet) return 0;
+      const baseAsset = assetId.split('_')[0];
+      const map: Record<string, number> = {
+        'BTC': wallet.btc_balance, 'ETH': wallet.balance, 'USDT': wallet.usdt_balance,
+        'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance,
+        'BNB': wallet.bnb_balance, 'MATIC': wallet.matic_balance,
+        'AVAX': wallet.avax_balance, 'USDC': wallet.usdc_balance
+      };
+      return map[baseAsset] || 0;
     };
-    return map[assetId] || 0;
-  };
-
-  const totalBalance = CRYPTO_ASSETS.reduce((acc, asset) => {
-    return acc + (getBalance(asset.id) * (prices[asset.id] || 0));
-  }, 0);
+  
+    // We only want to count each base asset once in the total balance to prevent double counting 
+    // for assets that have multiple networks (e.g. USDT ERC20 and USDT TRC20 share the same usdt_balance)
+    const totalBalance = [...new Set(CRYPTO_ASSETS.map(a => a.id.split('_')[0]))].reduce((acc, baseAssetId) => {
+      // Find the primary token for this base asset to get the price
+      const primaryAsset = CRYPTO_ASSETS.find(a => a.id === baseAssetId);
+      if (!primaryAsset) return acc;
+      
+      const bal = getBalance(baseAssetId);
+      const price = baseAssetId === 'USDT' || baseAssetId === 'USDC' ? 1 : (prices[primaryAsset.id] || 0);
+      return acc + (bal * price);
+    }, 0);
 
   const shouldShowSetup = (!wallet || requiresSetup) && !setupComplete;
   
