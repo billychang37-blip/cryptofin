@@ -1,7 +1,8 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Wallet, Navigation, Link2, Settings, Power } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -9,6 +10,23 @@ export function MobileNav() {
   const pathname = usePathname();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+    const router = useRouter();
+  const supabase = createClientComponentClient();
+  
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      localStorage.clear();
+      sessionStorage.clear();
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+      router.push('/auth/login');
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const menu = [
     { 
