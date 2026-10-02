@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         .eq('id', wallet.id);
         
       if (updateError) {
-        return NextResponse.json({ error: 'Failed to update balance' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update balance: ' + updateError.message }, { status: 500 });
       }
     }
 
