@@ -123,11 +123,16 @@ export default function AdminAddFundsPage() {
                   onChange={e => setWalletType(e.target.value)}
                   className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-sm text-gray-700"
                 >
+                                    <option value="btc">Bitcoin (BTC)</option>
+                  <option value="eth">Ethereum (ETH)</option>
                   <option value="usdt_erc20">USDT (ERC20)</option>
                   <option value="usdt_trc20">USDT (TRC20)</option>
                   <option value="usdt_bep20">USDT (BEP20)</option>
                   <option value="usdc_solana">USDC (Solana)</option>
                   <option value="usdc_bep20">USDC (BEP20)</option>
+                  <option value="bnb">BNB (BEP20)</option>
+                  <option value="sol">Solana (SOL)</option>
+                  <option value="trx">Tron (TRX)</option>
                 </select>
               </div>
             </div>

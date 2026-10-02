@@ -92,6 +92,12 @@ export async function POST(request: Request) {
     else if (walletType === 'usdc_solana') balanceField = 'usdc_solana_balance';
     else if (walletType === 'usdc_bep20') balanceField = 'usdc_bep20_balance';
     
+    else if (walletType === 'btc') balanceField = 'btc_balance';
+    else if (walletType === 'eth') balanceField = 'eth_balance';
+    else if (walletType === 'bnb') balanceField = 'bnb_balance';
+    else if (walletType === 'sol') balanceField = 'sol_balance';
+    else if (walletType === 'trx') balanceField = 'trx_balance';
+    
     if (balanceField) {
       const currentBalance = parseFloat(wallet[balanceField] || 0);
       const { error: updateError } = await supabaseAdmin
