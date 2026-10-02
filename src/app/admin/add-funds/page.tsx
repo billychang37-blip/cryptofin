@@ -113,22 +113,9 @@ export default function AdminAddFundsPage() {
         
         <form onSubmit={handleAddFunds} className="p-6 p-8 space-y-6">
           
-          <div className="flex flex-col mb-4">
-            <label className="text-sm font-bold text-gray-700 mb-2">Fund Type: <span className="text-red-500">*</span></label>
-            <div className="flex space-x-6 mt-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="walletType" value="main" checked={walletType === 'main'} onChange={() => setWalletType('main')} className="w-4 h-4 text-[#3498db]" />
-                <span className="text-sm font-medium text-gray-600">Main Wallet (Fiat USD)</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="walletType" value="crypto" checked={walletType.startsWith('usd')} onChange={() => setWalletType('usdt_erc20')} className="w-4 h-4 text-[#3498db]" />
-                <span className="text-sm font-medium text-gray-600">Crypto Deposit</span>
-              </label>
-            </div>
-          </div>
+          
 
-          {walletType.startsWith('usd') && (
-            <div className="flex gap-4 mb-4">
+          <div className="flex gap-4 mb-4">
               <div className="flex-1">
                 <label className="block text-sm font-bold text-gray-700 mb-2">Crypto Asset: <span className="text-red-500">*</span></label>
                 <select 
@@ -144,7 +131,6 @@ export default function AdminAddFundsPage() {
                 </select>
               </div>
             </div>
-          )}
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">User: <span className="text-red-500">*</span></label>

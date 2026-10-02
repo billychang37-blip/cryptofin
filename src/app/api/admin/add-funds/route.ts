@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
-      selectedUser, walletType, amount, fromName, fromBank, 
+      selectedUser, walletType, amount, 
       fromAddress, txHash, date, sendEmail 
     } = body;
 
@@ -73,8 +73,8 @@ export async function POST(request: Request) {
         created_at: date || new Date().toISOString(),
         from_address: fromAddress || null,
         tx_hash: txHash || null,
-        sender_name: fromName || null,
-        bank_name: fromBank || null
+        
+        
       })
       .select()
       .single();
