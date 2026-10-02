@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 const supabase = createClient();
 
-export default function AdminTransfersPage() {
+export default function AdminWithdrawalsPage() {
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +26,7 @@ export default function AdminTransfersPage() {
   }, []);
 
   const handleUpdateStatus = async (txId: string, newStatus: string, userId: string, amount: number) => {
-    if (!confirm(`Are you sure you want to ${newStatus} this transfer?`)) return;
+    if (!confirm(`Are you sure you want to ${newStatus} this withdrawal?`)) return;
 
     // If rejecting a transfer, refund the wallet balance.
     // (Assuming the balance was deducted when they initiated it).
@@ -45,20 +45,20 @@ export default function AdminTransfersPage() {
       .eq('id', txId);
       
     if (!error) {
-      alert(`Transfer ${newStatus}`);
+      alert(`Withdrawal ${newStatus}`);
       fetchTransfers();
     } else {
       alert(`Error updating status: ${error.message}`);
     }
   };
 
-  if (loading) return <div>Loading transfers...</div>;
+  if (loading) return <div>Loading withdrawals...</div>;
 
   return (
     <div className="w-full animate-in fade-in duration-300">
       <div className="bg-white border border-gray-300 rounded shadow-sm overflow-hidden mb-8">
         <div className="bg-[#3498db] text-white px-4 py-3 border-b-4 border-black">
-          <h3 className="font-bold tracking-widest text-sm uppercase">Manage Transfers (Withdrawals)</h3>
+          <h3 className="font-bold tracking-widest text-sm uppercase">Manage Withdrawals</h3>
         </div>
         
         <div className="overflow-x-auto">
@@ -76,7 +76,7 @@ export default function AdminTransfersPage() {
             <tbody>
               {transfers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-gray-500 text-sm">No transfers found.</td>
+                  <td colSpan={6} className="p-6 text-center text-gray-500 text-sm">No withdrawals found.</td>
                 </tr>
               ) : (
                 transfers.map(tx => (

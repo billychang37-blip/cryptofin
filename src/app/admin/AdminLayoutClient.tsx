@@ -70,9 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "KYC Applications", href: "/admin/kyc", icon: FileCheck },
     { name: "Fund Accounts", href: "/admin/add-funds", icon: PlusCircle },
     { name: "Manage Deposits", href: "/admin/deposits", icon: ArrowDownToLine },
-    { name: "Manage Transfers", href: "/admin/transfers", icon: ArrowUpFromLine },
-    { name: "Manage Savings", href: "/admin/savings", icon: Wallet },
-    { name: "Soft Tokens", href: "/admin/soft-tokens", icon: Key },
+    { name: "Manage Withdrawals", href: "/admin/withdrawals", icon: ArrowUpFromLine },
     { name: "IP Config", href: "/admin/ip-config", icon: Repeat },
     { name: "Settings", href: "/admin/profile", icon: Settings },
   ];
