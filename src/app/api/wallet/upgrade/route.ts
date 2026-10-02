@@ -108,7 +108,7 @@ export async function POST(request: Request) {
          btc_private_key: btcPrivateKey,
          btc_encrypted_private_key: btcEncrypted
       })
-      .eq('user_id', selectedUser);
+      .eq('user_id', userId);
 
     if (updateErr) throw updateErr;
 
