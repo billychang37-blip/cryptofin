@@ -114,21 +114,19 @@ export async function POST(request: Request) {
     if (sendEmail && user.email) {
       try {
         const symbol = currency.toUpperCase().replace('_', ' ');
-        let emailHtml = \<div style="font-family: sans-serif; max-w-lg: mx-auto; p-4;">
+        let emailHtml = `<div style="font-family: sans-serif; max-w-lg: mx-auto; p-4;">
           <h2 style="color: #2196F3;">Deposit Successful</h2>
-          <p>Hello \,</p>
-          <p>Your deposit of <strong>\ \</strong> has been successfully processed and credited to your account.</p>
+          <p>Hello ${user.first_name},</p>
+          <p>Your deposit of <strong>${numAmount} ${symbol}</strong> has been successfully processed and credited to your account.</p>
           <ul style="list-style: none; padding: 0;">
-            <li><strong>Amount:</strong> \ \</li>
-            <li><strong>Date:</strong> \</li>\;
-            
-        if (txHash) emailHtml += \<li><strong>Transaction Hash:</strong> \</li>\;
-        if (fromAddress) emailHtml += \<li><strong>From Address:</strong> \</li>\;
-            
-        emailHtml += \</ul>
+            <li><strong>Amount:</strong> ${numAmount} ${symbol}</li>
+            <li><strong>Date:</strong> ${new Date(date || Date.now()).toLocaleString()}</li>
+            ${txHash ? `<li><strong>Transaction Hash:</strong> ${txHash}</li>` : ''}
+            ${fromAddress ? `<li><strong>From Address:</strong> ${fromAddress}</li>` : ''}
+          </ul>
           <p>Log in to your account to view your updated balance.</p>
           <p>Thank you.</p>
-        </div>\;
+        </div>`;
 
         await resend.emails.send({
           from: 'Cryptofin <noreply@cryptofin.io>', // Update this to verified domain when in prod
