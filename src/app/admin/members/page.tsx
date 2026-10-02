@@ -133,8 +133,8 @@ export default function AdminMembersPage() {
                 <tr className="bg-[#EAEAEA] text-[#333333] text-xs uppercase font-bold">
                   <th className="p-2 border border-gray-300 w-8 text-center">#</th>
                   <th className="p-2 border border-gray-300 w-8 text-center"><input type="checkbox" /></th>
-                  <th className="p-2 border border-gray-300 text-center"></th> {/* Action column */}
-                  <th className="p-2 border border-gray-300">Username <span className="text-[9px]">▲▼</span></th>
+                  <th className="p-2 border border-gray-300 text-center"></th>
+<th className="p-2 border border-gray-300">Username <span className="text-[9px]">▲▼</span></th>
                   <th className="p-2 border border-gray-300">Email <span className="text-[9px]">▲▼</span></th>
                   <th className="p-2 border border-gray-300 text-center">Account ID</th>
                   <th className="p-2 border border-gray-300 text-center">Phone</th>
