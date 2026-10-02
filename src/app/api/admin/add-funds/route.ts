@@ -125,7 +125,7 @@ export async function POST(request: Request) {
         </div>`;
 
         await resend.emails.send({
-          from: 'Cryptofin <onboarding@resend.dev>',
+          from: 'Cryptofin <noreply@cryptofin.io>',
           to: user.email,
           subject: 'transaction info',
           html: emailHtml
