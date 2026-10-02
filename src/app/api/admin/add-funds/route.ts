@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       const { error: updateError } = await supabaseAdmin
         .from('wallets')
         .update({ [balanceField]: currentBalance + numAmount })
-        .eq('id', wallet.id);
+        .eq('user_id', selectedUser);
         
       if (updateError) {
         return NextResponse.json({ error: 'Failed to update balance: ' + updateError.message }, { status: 500 });
