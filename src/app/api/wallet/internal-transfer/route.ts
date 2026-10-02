@@ -45,12 +45,7 @@ export async function POST(request: Request) {
     else if (assetBase === 'AVAX') balanceField = 'avax_balance';
     else if (assetBase === 'USDC') balanceField = 'usdc_balance';
     
-    // For legacy usdt_erc20 mapping
-    if (assetId === 'usdt_erc20') balanceField = 'usdt_erc20_balance';
-    else if (assetId === 'usdt_trc20') balanceField = 'usdt_trc20_balance';
-    else if (assetId === 'usdt_bep20') balanceField = 'usdt_bep20_balance';
-    else if (assetId === 'usdc_solana') balanceField = 'usdc_solana_balance';
-    else if (assetId === 'usdc_bep20') balanceField = 'usdc_bep20_balance';
+
 
     // 3. Get sender wallet and verify balance
     const { data: senderWallet } = await supabaseAdmin.from('wallets').select('*').eq('user_id', senderId).single();

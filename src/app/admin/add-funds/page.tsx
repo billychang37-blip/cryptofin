@@ -171,53 +171,28 @@ export default function AdminAddFundsPage() {
             })()}
           </div>
 
-          {walletType === 'main' ? (
-            <>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">From Bank Name: <span className="text-gray-400 font-normal">(Optional)</span></label>
-                <input 
-                  type="text"
-                  value={fromBank}
-                  onChange={e => setFromBank(e.target.value)}
-                  placeholder="e.g. Chase Bank, Bank of America"
-                  className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-sm text-gray-700"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Sender Name: <span className="text-gray-400 font-normal">(Optional)</span></label>
-                <input 
-                  type="text"
-                  value={fromName}
-                  onChange={e => setFromName(e.target.value)}
-                  placeholder="e.g. John Doe, ACME Corp"
-                  className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-sm text-gray-700"
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Sending Wallet Address: <span className="text-gray-400 font-normal">(Optional)</span></label>
-                <input 
-                  type="text"
-                  value={fromAddress}
-                  onChange={e => setFromAddress(e.target.value)}
-                  placeholder="The crypto address the funds were sent from"
-                  className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-sm text-gray-700 font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Transaction ID / Blockchain ID: <span className="text-gray-400 font-normal">(Optional)</span></label>
-                <input 
-                  type="text"
-                  value={txHash}
-                  onChange={e => setTxHash(e.target.value)}
-                  placeholder="TxHash"
-                  className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-sm text-gray-700 font-mono"
-                />
-              </div>
-            </>
-          )}
+          <>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Sending Wallet Address: <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <input 
+                type="text"
+                value={fromAddress}
+                onChange={e => setFromAddress(e.target.value)}
+                placeholder="The crypto address the funds were sent from"
+                className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-sm text-gray-700 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Transaction ID / Blockchain ID: <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <input 
+                type="text"
+                value={txHash}
+                onChange={e => setTxHash(e.target.value)}
+                placeholder="TxHash"
+                className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-sm text-gray-700 font-mono"
+              />
+            </div>
+          </>
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Amount / Quantity: <span className="text-red-500">*</span></label>

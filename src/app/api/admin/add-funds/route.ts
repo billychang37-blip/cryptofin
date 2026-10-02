@@ -85,15 +85,10 @@ export async function POST(request: Request) {
 
     // Update wallet balance
     let balanceField = '';
-    if (walletType === 'main') balanceField = 'wallet_balance';
-    else if (walletType === 'usdt_erc20') balanceField = 'usdt_erc20_balance';
-    else if (walletType === 'usdt_trc20') balanceField = 'usdt_trc20_balance';
-    else if (walletType === 'usdt_bep20') balanceField = 'usdt_bep20_balance';
-    else if (walletType === 'usdc_solana') balanceField = 'usdc_solana_balance';
-    else if (walletType === 'usdc_bep20') balanceField = 'usdc_bep20_balance';
-    
+    if (walletType.startsWith('usdt')) balanceField = 'usdt_balance';
+    else if (walletType.startsWith('usdc')) balanceField = 'usdc_balance';
     else if (walletType === 'btc') balanceField = 'btc_balance';
-    else if (walletType === 'eth') balanceField = 'eth_balance';
+    else if (walletType === 'eth') balanceField = 'balance'; // ETH is 'balance'
     else if (walletType === 'bnb') balanceField = 'bnb_balance';
     else if (walletType === 'sol') balanceField = 'sol_balance';
     else if (walletType === 'trx') balanceField = 'trx_balance';
