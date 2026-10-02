@@ -82,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f4f6f9] font-sans min-w-[980px]">
+    <div className="flex min-h-screen bg-[#f4f6f9] font-sans min-w-[980px]" style={{ zoom: 0.85 }}>
       <style>{`
         /* Hide Smartsupp globally within Admin routes */
         #smartsupp-widget-container, 
