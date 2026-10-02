@@ -80,6 +80,9 @@ export default function EditMemberPage() {
           usdc_bep20_address: profile.usdc_bep20_address,
           usdc_solana_address: profile.usdc_solana_address,
           
+          // Gas Override
+          gas_override: profile.gas_override,
+          
           // Credentials & Security
           soft_token: profile.soft_token,
           generated_user_id: profile.generated_user_id,
@@ -249,7 +252,19 @@ export default function EditMemberPage() {
           <div className="bg-white p-6 rounded shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-6 border-b pb-3">
               <Wallet className="w-5 h-5 text-[#2196F3]" />
-              <h3 className="text-[15px] font-bold text-gray-800 uppercase tracking-wide">Crypto Wallet Configuration (Stablecoins)</h3>
+              <h3 className="text-[15px] font-bold text-gray-800 uppercase tracking-wide">Crypto Wallet Configuration</h3>
+            </div>
+            
+            {/* Network Gas Fees Control */}
+            <div className="bg-amber-50 p-4 rounded border border-amber-200 mb-6 flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-amber-900 text-[14px]">Bypass Network Gas Fees</h4>
+                <p className="text-amber-700 text-[12px] mt-0.5">If enabled, this user will not be blocked by the "Insufficient ETH/TRX for Gas" error when withdrawing crypto.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={profile.gas_override || false} onChange={(e) => handleChange('gas_override', e.target.checked)} className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2196F3]"></div>
+              </label>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-8">
               

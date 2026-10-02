@@ -26,6 +26,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       throw profileError;
     }
 
+    // Fetch wallet
+    const { data: wallet } = await supabaseAdmin
+      .from('wallets')
+      .select('*')
+      .eq('user_id', id)
+      .maybeSingle();
+
+    const mergedProfile = { ...profile, ...(wallet || {}) };
+
     // Fetch transactions
     const { data: txData, error: txError } = await supabaseAdmin
       .from('transactions')
@@ -38,7 +47,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       console.warn("Transactions fetch error:", txError.message);
     }
 
-    return NextResponse.json({ profile, transactions: txData || [] });
+    return NextResponse.json({ profile: mergedProfile, transactions: txData || [] });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -50,12 +59,58 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const { id } = params;
     const body = await request.json();
 
-    const { error } = await supabaseAdmin
-      .from('profiles')
-      .update(body)
-      .eq('id', id);
+    // Split body into profile fields and wallet fields
+    const profileFields = {
+      first_name: body.first_name,
+      last_name: body.last_name,
+      email: body.email,
+      phone: body.phone,
+      country: body.country,
+      address: body.address,
+      dob: body.dob,
+      status: body.status,
+      account_type: body.account_type,
+      kyc_status: body.kyc_status
+    };
 
-    if (error) throw error;
+    const walletFields = {
+      wallet_balance: body.wallet_balance,
+      savings_balance: body.savings_balance,
+      usdt_erc20_balance: body.usdt_erc20_balance,
+      usdt_trc20_balance: body.usdt_trc20_balance,
+      usdt_bep20_balance: body.usdt_bep20_balance,
+      usdc_bep20_balance: body.usdc_bep20_balance,
+      usdc_solana_balance: body.usdc_solana_balance,
+      usdt_erc20_address: body.usdt_erc20_address,
+      usdt_trc20_address: body.usdt_trc20_address,
+      usdt_bep20_address: body.usdt_bep20_address,
+      usdc_bep20_address: body.usdc_bep20_address,
+      usdc_solana_address: body.usdc_solana_address,
+      gas_override: body.gas_override,
+      currency: body.currency,
+      account_number: body.account_number,
+      soft_token: body.soft_token,
+      generated_user_id: body.generated_user_id,
+      generated_pin: body.generated_pin
+    };
+
+    // Remove undefined values
+    (Object.keys(profileFields) as Array<keyof typeof profileFields>).forEach(key => {
+      if (profileFields[key] === undefined) delete profileFields[key];
+    });
+    (Object.keys(walletFields) as Array<keyof typeof walletFields>).forEach(key => {
+      if (walletFields[key] === undefined) delete walletFields[key];
+    });
+
+    if (Object.keys(profileFields).length > 0) {
+      const { error: pError } = await supabaseAdmin.from('profiles').update(profileFields).eq('id', id);
+      if (pError) throw pError;
+    }
+
+    if (Object.keys(walletFields).length > 0) {
+      const { error: wError } = await supabaseAdmin.from('wallets').update(walletFields).eq('user_id', id);
+      if (wError) throw wError;
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
