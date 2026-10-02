@@ -13,10 +13,7 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 // 1. VIEWPORT: Fixes Zooming & Notch Issues
 export const viewport: Viewport = {
   width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover", // ⚠️ CRITICAL: Lets content flow behind the notch
+  viewportFit: "cover",
   themeColor: "#050505", 
 };
 
