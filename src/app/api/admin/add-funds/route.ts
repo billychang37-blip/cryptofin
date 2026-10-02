@@ -71,7 +71,9 @@ export async function POST(request: Request) {
         amount: numAmount,
         currency: currency,
         status: 'completed',
-        created_at: date || new Date().toISOString()
+        created_at: date || new Date().toISOString(),
+        from_address: fromAddress || null,
+        tx_hash: txHash || null
       })
       .select()
       .single();
