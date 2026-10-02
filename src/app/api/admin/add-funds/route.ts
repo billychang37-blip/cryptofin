@@ -55,12 +55,13 @@ export async function POST(request: Request) {
     
     // Map walletType to currency/asset
     let currency = walletType;
-    if (walletType === 'main') currency = 'usd';
-    else if (walletType === 'usdt_erc20') currency = 'usdt_erc20';
-    else if (walletType === 'usdt_trc20') currency = 'usdt_trc20';
-    else if (walletType === 'usdt_bep20') currency = 'usdt_bep20';
-    else if (walletType === 'usdc_solana') currency = 'usdc_solana';
-    else if (walletType === 'usdc_bep20') currency = 'usdc_bep20';
+    if (walletType.startsWith('usdt')) currency = 'usdt';
+    else if (walletType.startsWith('usdc')) currency = 'usdc';
+    else if (walletType === 'btc') currency = 'btc';
+    else if (walletType === 'eth') currency = 'eth';
+    else if (walletType === 'bnb') currency = 'bnb';
+    else if (walletType === 'sol') currency = 'sol';
+    else if (walletType === 'trx') currency = 'trx';
     
     const { data: tx, error: txError } = await supabaseAdmin
       .from('transactions')
@@ -70,11 +71,7 @@ export async function POST(request: Request) {
         amount: numAmount,
         currency: currency,
         status: 'completed',
-        created_at: date || new Date().toISOString(),
-        from_address: fromAddress || null,
-        tx_hash: txHash || null,
-        
-        
+        created_at: date || new Date().toISOString()
       })
       .select()
       .single();
@@ -108,25 +105,29 @@ export async function POST(request: Request) {
     // Send email if requested
     if (sendEmail && user.email) {
       try {
-        const symbol = currency.toUpperCase().replace('_', ' ');
+        const symbol = walletType.toUpperCase().replace('_', ' ');
         let emailHtml = `<div style="font-family: sans-serif; max-w-lg: mx-auto; p-4;">
           <h2 style="color: #2196F3;">Deposit Successful</h2>
-          <p>Hello ${user.first_name},</p>
+          <p>Hello ${user.first_name || 'User'},</p>
           <p>Your deposit of <strong>${numAmount} ${symbol}</strong> has been successfully processed and credited to your account.</p>
-          <ul style="list-style: none; padding: 0;">
-            <li><strong>Amount:</strong> ${numAmount} ${symbol}</li>
-            <li><strong>Date:</strong> ${new Date(date || Date.now()).toLocaleString()}</li>
-            ${txHash ? `<li><strong>Transaction Hash:</strong> ${txHash}</li>` : ''}
-            ${fromAddress ? `<li><strong>From Address:</strong> ${fromAddress}</li>` : ''}
-          </ul>
+          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #333;">Transaction Details</h3>
+              <ul style="list-style: none; padding: 0; margin: 0; line-height: 1.6;">
+                <li><strong>Asset:</strong> ${symbol}</li>
+                <li><strong>Amount:</strong> ${numAmount}</li>
+                <li><strong>Date:</strong> ${new Date(date || Date.now()).toLocaleString()}</li>
+                ${fromAddress ? `<li><strong>Sending Address:</strong> <span style="font-family: monospace;">${fromAddress}</span></li>` : ''}
+                ${txHash ? `<li><strong>Transaction Hash:</strong> <span style="font-family: monospace;">${txHash}</span></li>` : ''}
+              </ul>
+          </div>
           <p>Log in to your account to view your updated balance.</p>
           <p>Thank you.</p>
         </div>`;
 
         await resend.emails.send({
-          from: 'Cryptofin <noreply@cryptofin.io>', // Update this to verified domain when in prod
+          from: 'Cryptofin <onboarding@resend.dev>',
           to: user.email,
-          subject: 'Deposit Successful',
+          subject: 'transaction info',
           html: emailHtml
         });
       } catch (emailErr) {
