@@ -9,7 +9,7 @@ export default function AdminAddFundsPage() {
   const [selectedUser, setSelectedUser] = useState("");
   
   // Wallet selection
-  const [walletType, setWalletType] = useState("BTC"); // 'main', 'btc', 'eth', 'usdt'
+  const [walletType, setWalletType] = useState("main"); // 'main', 'btc', 'eth', 'usdt'
   
   // Form fields
   const [amount, setAmount] = useState("");
@@ -111,40 +111,43 @@ export default function AdminAddFundsPage() {
           <a href="/admin/deposits" className="text-[#3498db] text-xs font-bold hover:underline">Go to Manage Deposits</a>
         </div>
         
-                  <form onSubmit={handleAddFunds} className="p-6 p-8 space-y-6">
-            
+        <form onSubmit={handleAddFunds} className="p-6 p-8 space-y-6">
+          
+          <div className="flex flex-col mb-4">
+            <label className="text-sm font-bold text-gray-700 mb-2">Fund Type: <span className="text-red-500">*</span></label>
+            <div className="flex space-x-6 mt-2">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="walletType" value="main" checked={walletType === 'main'} onChange={() => setWalletType('main')} className="w-4 h-4 text-[#3498db]" />
+                <span className="text-sm font-medium text-gray-600">Main Wallet (Fiat USD)</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="walletType" value="crypto" checked={walletType.startsWith('usd')} onChange={() => setWalletType('usdt_erc20')} className="w-4 h-4 text-[#3498db]" />
+                <span className="text-sm font-medium text-gray-600">Crypto Deposit</span>
+              </label>
+            </div>
+          </div>
+
+          {walletType.startsWith('usd') && (
             <div className="flex gap-4 mb-4">
               <div className="flex-1">
-                <label className="block text-sm font-bold text-gray-700 mb-2">Asset to Fund: <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Crypto Asset: <span className="text-red-500">*</span></label>
                 <select 
                   value={walletType}
                   onChange={e => setWalletType(e.target.value)}
                   className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-sm text-gray-700"
                 >
-                  <option value="BTC">Bitcoin (BTC)</option>
-                  <option value="ETH">Ethereum (ETH)</option>
-                  <option value="USDT">Tether USDT (ERC-20)</option>
-                  <option value="USDT_TRX">Tether USDT (TRC-20)</option>
-                  <option value="USDT_BNB">Tether USDT (BEP-20)</option>
-                  <option value="USDT_SOL">Tether USDT (Solana)</option>
-                  <option value="USDT_MATIC">Tether USDT (Polygon)</option>
-                  <option value="USDT_AVAX">Tether USDT (Avalanche)</option>
-                  <option value="USDC">USD Coin USDC (ERC-20)</option>
-                  <option value="USDC_BNB">USD Coin USDC (BEP-20)</option>
-                  <option value="USDC_SOL">USD Coin USDC (Solana)</option>
-                  <option value="USDC_MATIC">USD Coin USDC (Polygon)</option>
-                  <option value="USDC_AVAX">USD Coin USDC (Avalanche)</option>
-                  <option value="BNB">Binance Coin (BNB)</option>
-                  <option value="SOL">Solana (SOL)</option>
-                  <option value="TRX">Tron (TRX)</option>
-                  <option value="MATIC">Polygon (MATIC)</option>
-                  <option value="AVAX">Avalanche (AVAX)</option>
+                  <option value="usdt_erc20">USDT (ERC20)</option>
+                  <option value="usdt_trc20">USDT (TRC20)</option>
+                  <option value="usdt_bep20">USDT (BEP20)</option>
+                  <option value="usdc_solana">USDC (Solana)</option>
+                  <option value="usdc_bep20">USDC (BEP20)</option>
                 </select>
               </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">User: <span className="text-red-500">*</span></label>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">User: <span className="text-red-500">*</span></label>
             <div 
               onClick={() => setShowUserModal(true)}
               className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 text-sm text-gray-700 cursor-pointer flex justify-between items-center hover:border-[#3498db] transition-colors"
@@ -313,8 +316,8 @@ export default function AdminAddFundsPage() {
       </div>
 
       {showUserModal && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 z-[100] flex items-center justify-center bg-black/60 p-4 min-w-[980px]">
-          <div className="bg-white rounded shadow-xl w-[500px] flex flex-col max-h-[80vh] overflow-hidden">
+        <div className="fixed top-0 left-0 right-0 bottom-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded shadow-xl w-full max-w-[500px] flex flex-col max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between bg-white border-b-2 border-blue-500 px-4 py-3">
               <h2 className="text-blue-500 text-sm font-bold tracking-widest uppercase">Select Users</h2>
