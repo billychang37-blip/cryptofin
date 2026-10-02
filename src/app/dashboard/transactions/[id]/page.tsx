@@ -73,7 +73,7 @@ export default function TransactionReceiptPage() {
     const isInternal = tx.metadata?.method === 'internal';
     const assetNetwork = isInternal ? 'Internal Network' : (NETWORKS[tx.currency] || tx.currency);
     
-    const fromAddress = isInternal ? 'Internal Wallet' : '0x' + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const fromAddress = tx.from_address || (isInternal ? 'Internal Wallet' : '0x' + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join(''));
     const txHashDisplay = tx.tx_hash || ('0x' + tx.id.replace(/-/g, '') + Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join(''));
     const refDisplay = isInternal ? tx.id.split('-')[0].toUpperCase() : txHashDisplay;
     const recipientDisplay = isInternal ? (tx.to_address || 'Internal User') : (tx.to_address || '-');

@@ -55,13 +55,16 @@ export async function POST(request: Request) {
     
     // Map walletType to currency/asset
     let currency = walletType;
-    if (walletType.startsWith('usdt')) currency = 'usdt';
-    else if (walletType.startsWith('usdc')) currency = 'usdc';
-    else if (walletType === 'btc') currency = 'btc';
-    else if (walletType === 'eth') currency = 'eth';
-    else if (walletType === 'bnb') currency = 'bnb';
-    else if (walletType === 'sol') currency = 'sol';
-    else if (walletType === 'trx') currency = 'trx';
+    if (walletType === 'usdt_erc20') currency = 'USDT';
+    else if (walletType === 'usdt_trc20') currency = 'USDT_TRX';
+    else if (walletType === 'usdt_bep20') currency = 'USDT_BNB';
+    else if (walletType === 'usdc_solana') currency = 'USDC_SOL';
+    else if (walletType === 'usdc_bep20') currency = 'USDC_BNB';
+    else if (walletType === 'btc') currency = 'BTC';
+    else if (walletType === 'eth') currency = 'ETH';
+    else if (walletType === 'bnb') currency = 'BNB';
+    else if (walletType === 'sol') currency = 'SOL';
+    else if (walletType === 'trx') currency = 'TRX';
     
     const { data: tx, error: txError } = await supabaseAdmin
       .from('transactions')
