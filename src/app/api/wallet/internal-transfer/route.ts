@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         </div>`;
         
         await resend.emails.send({
-          from: 'Cryptofin <noreply@cryptofin.io>',
+          from: 'Cryptofin <noreply@auth.cryptofin.org>',
           to: receiver.email,
           subject: `You received ${numAmount} ${symbol}`,
           html: receiverHtml
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
         </div>`;
         
         await resend.emails.send({
-          from: 'Cryptofin <noreply@cryptofin.io>',
+          from: 'Cryptofin <noreply@auth.cryptofin.org>',
           to: sender.email,
           subject: `Transfer Sent: ${numAmount} ${symbol}`,
           html: senderHtml
