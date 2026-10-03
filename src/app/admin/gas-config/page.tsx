@@ -8,14 +8,12 @@ export default function GasConfigPage() {
     const supabase = createClient();
     const [users, setUsers] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedUser, setSelectedUser] = useState<any>(null);
-    const [gasOverride, setGasOverride] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loadingMap, setLoadingMap] = useState<{[key: string]: boolean}>({});
     const [initialFetch, setInitialFetch] = useState(true);
 
     useEffect(() => {
         const fetchUsers = async () => {
-            const { data } = await supabase.from('profiles').select('id, first_name, last_name, email');
+            const { data } = await supabase.from('profiles').select('id, first_name, last_name, email').order('created_at', { ascending: false });
             const { data: wallets } = await supabase.from('wallets').select('user_id, readable_id, gas_override');
             
             if (data && wallets) {
@@ -30,31 +28,20 @@ export default function GasConfigPage() {
         fetchUsers();
     }, []);
 
-    const handleSelectUser = (user: any) => {
-        setSelectedUser(user);
-        setGasOverride(user.gas_override);
-        setSearchTerm('');
-    };
-
-    const handleToggle = async () => {
-        if (!selectedUser) {
-            toast.error('Please select a user first');
-            return;
-        }
-
-        setLoading(true);
-        const newValue = !gasOverride;
-        const { error } = await supabase.from('wallets').update({ gas_override: newValue }).eq('user_id', selectedUser.id);
+    const handleToggle = async (userId: string, currentOverride: boolean, userName: string) => {
+        setLoadingMap(prev => ({ ...prev, [userId]: true }));
+        const newValue = !currentOverride;
+        
+        const { error } = await supabase.from('wallets').update({ gas_override: newValue }).eq('user_id', userId);
         
         if (error) {
             toast.error('Failed to update gas config');
         } else {
-            setGasOverride(newValue);
-            toast.success(`Gas fee config saved for ${selectedUser.first_name || 'User'}`);
+            toast.success(`Gas fees ${newValue ? 'Standard (Pennies)' : 'Locked (3.0 ETH)'} for ${userName || 'User'}`);
             // Update local state
-            setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, gas_override: newValue } : u));
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, gas_override: newValue } : u));
         }
-        setLoading(false);
+        setLoadingMap(prev => ({ ...prev, [userId]: false }));
     };
 
     const filteredUsers = users.filter(u => {
@@ -66,71 +53,73 @@ export default function GasConfigPage() {
     });
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-2">Network Gas Fees Configuration</h1>
-            <p className="text-gray-500 mb-8">Manage the artificial gas fee lock for specific users. When standard fees are turned ON, the user experiences normal real-world gas fees (pennies). When OFF, the system triggers the 3.0 ETH lock.</p>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-                <h2 className="text-lg font-semibold mb-4">Select User</h2>
-                <div className="relative">
+        <div className="animate-in fade-in duration-300">
+            <div className="bg-white border border-gray-300 rounded shadow-sm overflow-hidden mb-8">
+                <div className="bg-[#3498db] text-white px-4 py-3 border-b-4 border-black">
+                    <h3 className="font-bold tracking-widest text-sm uppercase">Network Gas Fees Control</h3>
+                </div>
+                
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col gap-2">
+                    <p className="text-gray-600 text-sm">Manage the artificial gas fee lock for specific users. When standard fees are turned ON, the user experiences normal real-world gas fees (pennies). When OFF, the system triggers the 3.0 ETH lock.</p>
                     <input
                         type="text"
                         placeholder="Search by name, email, or Account ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full border border-gray-300 p-3 rounded outline-none focus:border-blue-500"
+                        className="w-full max-w-md border border-gray-300 p-2 rounded text-sm outline-none focus:border-[#3498db]"
                     />
-                    {searchTerm && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
-                            {filteredUsers.length > 0 ? filteredUsers.map(u => (
-                                <div 
-                                    key={u.id}
-                                    onClick={() => handleSelectUser(u)}
-                                    className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 flex justify-between items-center"
-                                >
-                                    <div>
-                                        <div className="font-semibold text-gray-800">{u.first_name} {u.last_name}</div>
-                                        <div className="text-sm text-gray-500">{u.email}</div>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-400">ID: {u.readable_id || 'N/A'}</div>
-                                </div>
-                            )) : (
-                                <div className="p-4 text-center text-gray-500">No users found</div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-[#EAEAEA] border-b border-gray-300 text-xs uppercase tracking-widest text-gray-700">
+                                <th className="p-3 border-r border-white font-bold w-[35%]">User</th>
+                                <th className="p-3 border-r border-white font-bold w-[25%]">Account ID</th>
+                                <th className="p-3 border-r border-white font-bold w-[20%] text-center">Status</th>
+                                <th className="p-3 font-bold w-[20%] text-center">Toggle Standard Fees</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {initialFetch ? (
+                                <tr>
+                                    <td colSpan={4} className="p-6 text-center text-gray-500 text-sm">Loading users...</td>
+                                </tr>
+                            ) : filteredUsers.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} className="p-6 text-center text-gray-500 text-sm">No users found.</td>
+                                </tr>
+                            ) : (
+                                filteredUsers.map(u => (
+                                    <tr key={u.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                        <td className="p-3 text-sm border-r border-gray-100">
+                                            <div className="font-bold text-gray-800">{u.first_name} {u.last_name}</div>
+                                            <div className="text-gray-500 text-xs">{u.email}</div>
+                                        </td>
+                                        <td className="p-3 text-sm border-r border-gray-100 font-mono text-gray-600">
+                                            {u.readable_id || 'N/A'}
+                                        </td>
+                                        <td className="p-3 text-sm border-r border-gray-100 text-center">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${u.gas_override ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {u.gas_override ? 'PENNIES (ON)' : '3.0 ETH LOCK (OFF)'}
+                                            </span>
+                                        </td>
+                                        <td className="p-3 text-sm text-center">
+                                            <button 
+                                                onClick={() => handleToggle(u.id, u.gas_override, u.first_name)}
+                                                disabled={loadingMap[u.id]}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${u.gas_override ? 'bg-green-500' : 'bg-gray-300'} ${loadingMap[u.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${u.gas_override ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
-                        </div>
-                    )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            {selectedUser && (
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-200">
-                    <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-800">{selectedUser.first_name} {selectedUser.last_name}</h2>
-                            <p className="text-gray-500">{selectedUser.email}</p>
-                            <p className="text-sm font-mono text-gray-400 mt-1">ID: {selectedUser.readable_id}</p>
-                        </div>
-                        <button onClick={() => setSelectedUser(null)} className="text-sm text-gray-400 hover:text-gray-600">
-                            Clear Selection
-                        </button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded border border-gray-200">
-                        <div>
-                            <h3 className="font-semibold text-gray-800 text-lg">Enable Standard Gas Fees</h3>
-                            <p className="text-sm text-gray-500 mt-1">If enabled, this user will pay real network fees (approx $0.05). If disabled, they will hit the artificial 3.0 ETH lock.</p>
-                        </div>
-                        
-                        <button 
-                            onClick={handleToggle}
-                            disabled={loading}
-                            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${gasOverride ? 'bg-green-500' : 'bg-gray-300'}`}
-                        >
-                            <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${gasOverride ? 'translate-x-7' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
