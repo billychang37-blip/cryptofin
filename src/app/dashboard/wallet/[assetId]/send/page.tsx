@@ -34,16 +34,26 @@ export default function SendPage() {
 
     // Mapping DB balance fields
     const balanceField = useMemo(() => {
-        if (assetBase === 'BTC') return 'btc_balance';
-        if (assetBase === 'USDT') return 'usdt_balance';
-        if (assetBase === 'SOL') return 'sol_balance';
-        if (assetBase === 'TRX') return 'trx_balance';
-        if (assetBase === 'BNB') return 'bnb_balance';
-        if (assetBase === 'MATIC') return 'matic_balance';
-        if (assetBase === 'AVAX') return 'avax_balance';
-        if (assetBase === 'USDC') return 'usdc_balance';
-        return 'balance';
-    }, [assetBase]);
+        if (assetId === 'USDT' || assetId === 'USDT_ERC20') return 'usdt_erc20_balance';
+        if (assetId === 'USDT_TRX' || assetId === 'USDT_TRC20') return 'usdt_trc20_balance';
+        if (assetId === 'USDT_BNB' || assetId === 'USDT_BEP20') return 'usdt_bep20_balance';
+        if (assetId === 'USDT_SOL') return 'usdt_sol_balance';
+        if (assetId === 'USDT_MATIC') return 'usdt_matic_balance';
+        if (assetId === 'USDT_AVAX') return 'usdt_avax_balance';
+        if (assetId === 'USDC_BNB' || assetId === 'USDC_BEP20') return 'usdc_bep20_balance';
+        if (assetId === 'USDC_SOL') return 'usdc_solana_balance';
+        if (assetId === 'USDC_MATIC') return 'usdc_matic_balance';
+        if (assetId === 'USDC_AVAX') return 'usdc_avax_balance';
+        if (assetId === 'USDC' || assetId === 'USDC_ERC20') return 'usdc_balance';
+        if (assetId === 'BTC') return 'btc_balance';
+        if (assetId === 'ETH') return 'balance';
+        if (assetId === 'BNB') return 'bnb_balance';
+        if (assetId === 'SOL') return 'sol_balance';
+        if (assetId === 'TRX') return 'trx_balance';
+        if (assetId === 'MATIC') return 'matic_balance';
+        if (assetId === 'AVAX') return 'avax_balance';
+        return assetBase.toLowerCase() + '_balance';
+    }, [assetId, assetBase]);
 
 
 

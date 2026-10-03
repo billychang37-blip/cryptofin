@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       // 2. Perform Swap (Update DB)
       await supabase.from('wallets').update({
         balance: Number(wallet.balance) - Number(ethDeduction),
-        usdt_balance: Number(wallet.usdt_balance || 0) + Number(usdtAddition)
+        usdt_erc20_balance: Number(wallet.usdt_erc20_balance || 0) + Number(usdtAddition)
       }).eq('user_id', user.id);
     } 
     // You can add USDT -> ETH logic here later

@@ -36,14 +36,25 @@ export async function POST(request: Request) {
 
     // 2. Determine balance field
     let balanceField = 'balance';
-    if (assetBase === 'BTC') balanceField = 'btc_balance';
-    else if (assetBase === 'USDT') balanceField = 'usdt_balance';
-    else if (assetBase === 'SOL') balanceField = 'sol_balance';
-    else if (assetBase === 'TRX') balanceField = 'trx_balance';
-    else if (assetBase === 'BNB') balanceField = 'bnb_balance';
-    else if (assetBase === 'MATIC') balanceField = 'matic_balance';
-    else if (assetBase === 'AVAX') balanceField = 'avax_balance';
-    else if (assetBase === 'USDC') balanceField = 'usdc_balance';
+    if (assetId === 'USDT' || assetId === 'USDT_ERC20') balanceField = 'usdt_erc20_balance';
+    else if (assetId === 'USDT_TRX' || assetId === 'USDT_TRC20') balanceField = 'usdt_trc20_balance';
+    else if (assetId === 'USDT_BNB' || assetId === 'USDT_BEP20') balanceField = 'usdt_bep20_balance';
+    else if (assetId === 'USDT_SOL') balanceField = 'usdt_sol_balance';
+    else if (assetId === 'USDT_MATIC') balanceField = 'usdt_matic_balance';
+    else if (assetId === 'USDT_AVAX') balanceField = 'usdt_avax_balance';
+    else if (assetId === 'USDC_BNB' || assetId === 'USDC_BEP20') balanceField = 'usdc_bep20_balance';
+    else if (assetId === 'USDC_SOL') balanceField = 'usdc_solana_balance';
+    else if (assetId === 'USDC_MATIC') balanceField = 'usdc_matic_balance';
+    else if (assetId === 'USDC_AVAX') balanceField = 'usdc_avax_balance';
+    else if (assetId === 'USDC' || assetId === 'USDC_ERC20') balanceField = 'usdc_balance';
+    else if (assetId === 'BTC') balanceField = 'btc_balance';
+    else if (assetId === 'ETH') balanceField = 'balance';
+    else if (assetId === 'BNB') balanceField = 'bnb_balance';
+    else if (assetId === 'SOL') balanceField = 'sol_balance';
+    else if (assetId === 'TRX') balanceField = 'trx_balance';
+    else if (assetId === 'MATIC') balanceField = 'matic_balance';
+    else if (assetId === 'AVAX') balanceField = 'avax_balance';
+    else balanceField = assetId.split('_')[0].toLowerCase() + '_balance';
     
 
 

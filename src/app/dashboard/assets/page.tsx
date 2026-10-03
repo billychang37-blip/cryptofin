@@ -46,25 +46,31 @@ export default function AssetsPage() {
       fetchPrices();
    }, []);
 
+   const getBalanceField = (aId: string) => {
+      if (aId === 'USDT' || aId === 'USDT_ERC20') return 'usdt_erc20_balance';
+      if (aId === 'USDT_TRX' || aId === 'USDT_TRC20') return 'usdt_trc20_balance';
+      if (aId === 'USDT_BNB' || aId === 'USDT_BEP20') return 'usdt_bep20_balance';
+      if (aId === 'USDT_SOL') return 'usdt_sol_balance';
+      if (aId === 'USDT_MATIC') return 'usdt_matic_balance';
+      if (aId === 'USDT_AVAX') return 'usdt_avax_balance';
+      if (aId === 'USDC_BNB' || aId === 'USDC_BEP20') return 'usdc_bep20_balance';
+      if (aId === 'USDC_SOL') return 'usdc_solana_balance';
+      if (aId === 'USDC_MATIC') return 'usdc_matic_balance';
+      if (aId === 'USDC_AVAX') return 'usdc_avax_balance';
+      if (aId === 'USDC' || aId === 'USDC_ERC20') return 'usdc_balance';
+      if (aId === 'BTC') return 'btc_balance';
+      if (aId === 'ETH') return 'balance';
+      if (aId === 'BNB') return 'bnb_balance';
+      if (aId === 'SOL') return 'sol_balance';
+      if (aId === 'TRX') return 'trx_balance';
+      if (aId === 'MATIC') return 'matic_balance';
+      if (aId === 'AVAX') return 'avax_balance';
+      return aId.split('_')[0].toLowerCase() + '_balance';
+   };
+
    const getBalance = (assetId: string) => {
       if (!wallet) return 0;
-      const map: Record<string, number> = {
-         'BTC': wallet.btc_balance, 'ETH': wallet.balance, 
-         'USDT': wallet.usdt_erc20_balance ?? wallet.usdt_balance, 
-         'USDT_TRX': wallet.usdt_trc20_balance ?? wallet.usdt_balance,
-         'USDT_BNB': wallet.usdt_bep20_balance ?? wallet.usdt_balance,
-         'USDC_BNB': wallet.usdc_bep20_balance ?? wallet.usdc_balance,
-         'USDC_SOL': wallet.usdc_solana_balance ?? wallet.usdc_balance,
-         'USDC': wallet.usdc_balance,
-         'USDC_MATIC': wallet.usdc_matic_balance ?? wallet.usdc_balance,
-         'USDC_AVAX': wallet.usdc_avax_balance ?? wallet.usdc_balance,
-         'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance, 'BNB': wallet.bnb_balance, 
-         'MATIC': wallet.matic_balance, 'AVAX': wallet.avax_balance,
-         'USDT_SOL': wallet.usdt_sol_balance ?? wallet.usdt_balance,
-         'USDT_MATIC': wallet.usdt_matic_balance ?? wallet.usdt_balance,
-         'USDT_AVAX': wallet.usdt_avax_balance ?? wallet.usdt_balance,
-      };
-      return map[assetId] || 0;
+      return Number(wallet[getBalanceField(assetId)] || 0);
    };
 
    return (
