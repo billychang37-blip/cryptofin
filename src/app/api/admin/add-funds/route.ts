@@ -13,12 +13,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
-      selectedUsers, walletType, amount, 
+      selectedUser, walletType, amount, 
       fromAddress, txHash, date, sendEmail 
     } = body;
     
-    if (!selectedUsers || !Array.isArray(selectedUsers) || selectedUsers.length === 0) {
-        return NextResponse.json({ error: 'No users selected' }, { status: 400 });
+    if (!selectedUser) {
+        return NextResponse.json({ error: 'No user selected' }, { status: 400 });
     }
 
     const numAmount = parseFloat(amount);
@@ -61,70 +61,69 @@ export async function POST(request: Request) {
     else if (walletType === 'avax') balanceField = 'avax_balance';
     else balanceField = walletType + '_balance';
 
-    let successCount = 0;
+    // 1. Get current user data
+    const { data: user } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', selectedUser)
+      .single();
+
+    if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     
-    for (const userId of selectedUsers) {
-        // 1. Get current user data
-        const { data: user } = await supabaseAdmin
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
+    // Get user wallet
+    let { data: wallet } = await supabaseAdmin
+      .from('wallets')
+      .select('*')
+      .eq('user_id', selectedUser)
+      .maybeSingle();
+      
+    if (!wallet) {
+      const { data: newWallet } = await supabaseAdmin
+        .from('wallets')
+        .insert({ user_id: selectedUser })
+        .select()
+        .single();
+      wallet = newWallet;
+    }
 
-        if (!user) continue;
+    if (!wallet) {
+        return NextResponse.json({ error: 'Wallet not found' }, { status: 404 });
+    }
+
+    // Create transaction record
+    await supabaseAdmin
+      .from('transactions')
+      .insert({
+        user_id: selectedUser,
+        type: 'deposit',
+        amount: numAmount,
+        currency: currency,
+        status: 'completed',
+        created_at: date || new Date().toISOString(),
+        from_address: fromAddress || null,
+        tx_hash: txHash || null
+      });
+
+    // Update wallet balance
+    if (balanceField) {
+      const currentBalance = parseFloat(wallet[balanceField] || 0);
+      await supabaseAdmin
+        .from('wallets')
+        .update({ [balanceField]: currentBalance + numAmount })
+        .eq('user_id', selectedUser);
+    }
+
+    // Send email if requested
+    if (sendEmail && user.email) {
+      try {
+        const symbol = currency.replace('_', ' ');
+        const username = (user.first_name || user.last_name) ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
         
-        // Get user wallet
-        let { data: wallet } = await supabaseAdmin
-          .from('wallets')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-          
-        if (!wallet) {
-          const { data: newWallet } = await supabaseAdmin
-            .from('wallets')
-            .insert({ user_id: userId })
-            .select()
-            .single();
-          wallet = newWallet;
-        }
-
-        if (!wallet) continue;
-
-        // Create transaction record
-        await supabaseAdmin
-          .from('transactions')
-          .insert({
-            user_id: userId,
-            type: 'deposit',
-            amount: numAmount,
-            currency: currency,
-            status: 'completed',
-            created_at: date || new Date().toISOString(),
-            from_address: fromAddress || null,
-            tx_hash: txHash || null
-          });
-
-        // Update wallet balance
-        if (balanceField) {
-          const currentBalance = parseFloat(wallet[balanceField] || 0);
-          await supabaseAdmin
-            .from('wallets')
-            .update({ [balanceField]: currentBalance + numAmount })
-            .eq('user_id', userId);
-        }
-
-        successCount++;
-
-        // Send email if requested
-        if (sendEmail && user.email) {
-          try {
-            const symbol = currency.replace('_', ' ');
-            const username = (user.first_name || user.last_name) ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
-            
-            // Text only format for deliverability
-            const emailText = `Deposit Successful
-            
+        // Text only format for deliverability
+        const emailText = `Deposit Successful
+        
 Hello ${username},
 
 Your deposit of ${numAmount} ${symbol} has been successfully processed and credited to your account.
@@ -140,19 +139,18 @@ Log in to your account to view your updated balance.
 
 Thank you.`;
 
-            await resend.emails.send({
-              from: 'Cryptofin Notifications <noreply@auth.cryptofin.org>',
-              to: user.email,
-              subject: 'Deposit Successful',
-              text: emailText
-            });
-          } catch (emailErr) {
-            console.error("Failed to send email to " + user.email, emailErr);
-          }
-        }
+        await resend.emails.send({
+          from: 'Cryptofin Notifications <noreply@auth.cryptofin.org>',
+          to: user.email,
+          subject: 'Deposit Successful',
+          text: emailText
+        });
+      } catch (emailErr) {
+        console.error("Failed to send email to " + user.email, emailErr);
+      }
     }
 
-    return NextResponse.json({ success: true, count: successCount });
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }

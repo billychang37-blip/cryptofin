@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Select from "react-select";
 import { Toaster, toast } from 'sonner';
 
 export default function AdminAddFundsPage() {
   const [users, setUsers] = useState<any[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState("");
   
   // Wallet selection
-  const [walletType, setWalletType] = useState("main"); 
+  const [walletType, setWalletType] = useState("main"); // 'main', 'btc', 'eth', 'usdt'
   
   // Form fields
   const [amount, setAmount] = useState("");
@@ -23,10 +22,11 @@ export default function AdminAddFundsPage() {
   const [date, setDate] = useState("");
   const [customTime, setCustomTime] = useState("");
   const [sendEmail, setSendEmail] = useState(false);
-  const [isGasFee, setIsGasFee] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
   
   const [prices, setPrices] = useState<Record<string, number>>({});
 
@@ -71,7 +71,6 @@ export default function AdminAddFundsPage() {
       }
     };
     fetchPrices();
-    
   }, []);
   
   // Calculate equivalent amounts
@@ -90,8 +89,8 @@ export default function AdminAddFundsPage() {
 
   const handleAddFunds = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedUsers.length === 0 || !amount || isNaN(Number(amount))) {
-      toast.error("Please select at least one user and enter a valid amount.");
+    if (!selectedUser || !amount || isNaN(Number(amount))) {
+      toast.error("Please select a user and enter a valid amount.");
       return;
     }
 
@@ -115,16 +114,8 @@ export default function AdminAddFundsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          selectedUsers: selectedUsers.map(u => u.value),
-          walletType, 
-          amount, 
-          fromName, 
-          fromBank,
-          fromAddress, 
-          txHash, 
-          date: finalDate, 
-          sendEmail, 
-          isGasFee
+          selectedUser, walletType, amount, fromName, fromBank,
+          fromAddress, txHash, date: finalDate, sendEmail
         })
       });
 
@@ -133,16 +124,14 @@ export default function AdminAddFundsPage() {
       if (!res.ok) {
         toast.error(result.error || "Failed to add funds.");
       } else {
-        toast.success(`Funds successfully added to ${result.count} user(s)!`);
-        if (sendEmail) toast.success("Email notifications sent!");
-        
+        toast.success(sendEmail ? "Funds successfully added and email notification sent!" : "Funds successfully added!");
         setAmount("");
         setAmountUsd("");
         setFromName("");
         setFromBank("");
         setFromAddress("");
         setTxHash("");
-        setSelectedUsers([]);
+        setSelectedUser("");
         
         // Refresh users
         const usersRes = await fetch('/api/admin/users');
@@ -155,16 +144,6 @@ export default function AdminAddFundsPage() {
     
     setSubmitting(false);
   };
-  
-  // Format for React Select
-  const userOptions = users.map(u => {
-    const name = u.first_name || u.last_name ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : 'User';
-    return {
-      value: u.id,
-      label: `${name} (${u.email || u.id})`,
-      data: u
-    };
-  });
   
   const getBalanceDisplay = (u: any, type: string) => {
     if (type === 'main') return `$${Number(u.wallet_balance || 0).toLocaleString()}`;
@@ -183,80 +162,87 @@ export default function AdminAddFundsPage() {
     return '0';
   };
 
+  const formatName = (u: any) => {
+      if (u.first_name || u.last_name) return `${u.first_name || ''} ${u.last_name || ''}`.trim();
+      return "User";
+  };
+
   if (loading) return <div>Loading...</div>;
 
   return (
     <div className="w-full animate-in fade-in duration-300 max-w-3xl">
       <Toaster position="top-center" richColors />
       <div className="bg-white border border-[#4EA7F8] rounded-sm shadow-sm overflow-hidden mb-8 relative">
-        <div className="px-4 md:px-6 py-5 border-b border-[#EAEAEA] flex justify-between items-center">
-          <h3 className="font-bold text-gray-600 text-sm md:text-[15px] uppercase tracking-wider">Add Funds</h3>
-          <a href="/admin/deposits" className="text-[#3498db] text-xs font-bold hover:underline">Manage Deposits</a>
+        <div className="px-6 py-5 border-b border-[#EAEAEA] flex justify-between items-center">
+          <h3 className="font-bold text-gray-600 text-[15px] uppercase tracking-wider">Add Funds</h3>
+          <a href="/admin/deposits" className="text-[#3498db] text-xs font-bold hover:underline">Go to Manage Deposits</a>
         </div>
         
         <form onSubmit={handleAddFunds} className="p-4 md:p-8 space-y-6">
-          <div className="flex flex-col mb-4">
-            <label className="block text-sm font-bold text-gray-700 mb-2">Crypto Asset: <span className="text-red-500">*</span></label>
-            <select 
-              value={walletType}
-              onChange={e => setWalletType(e.target.value)}
-              className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-base text-gray-700"
+          <div className="flex gap-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-sm font-bold text-gray-700 mb-2">Crypto Asset: <span className="text-red-500">*</span></label>
+                <select 
+                  value={walletType}
+                  onChange={e => setWalletType(e.target.value)}
+                  className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 outline-none focus:border-[#3498db] text-base text-gray-700"
+                >
+                  <option value="btc">Bitcoin (BTC)</option>
+                  <option value="eth">Ethereum (ETH)</option>
+                  <option value="usdt_erc20">USDT (ERC20)</option>
+                  <option value="usdt_trc20">USDT (TRC20)</option>
+                  <option value="usdt_bep20">USDT (BEP20)</option>
+                  <option value="usdc_solana">USDC (Solana)</option>
+                  <option value="usdc_bep20">USDC (BEP20)</option>
+                  <option value="bnb">BNB (BEP20)</option>
+                  <option value="sol">Solana (SOL)</option>
+                  <option value="trx">Tron (TRX)</option>
+                  <option value="matic">Polygon (MATIC)</option>
+                  <option value="avax">Avalanche (AVAX)</option>
+                </select>
+              </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">User: <span className="text-red-500">*</span></label>
+            <div 
+              onClick={() => setShowUserModal(true)}
+              className="w-full border border-gray-300 p-3 rounded-sm bg-gray-50 text-base text-gray-700 cursor-pointer flex justify-between items-center hover:border-[#3498db] transition-colors"
             >
-              <option value="btc">Bitcoin (BTC)</option>
-              <option value="eth">Ethereum (ETH)</option>
-              <option value="usdt_erc20">USDT (ERC20)</option>
-              <option value="usdt_trc20">USDT (TRC20)</option>
-              <option value="usdt_bep20">USDT (BEP20)</option>
-              <option value="usdc_solana">USDC (Solana)</option>
-              <option value="usdc_bep20">USDC (BEP20)</option>
-              <option value="bnb">BNB (BEP20)</option>
-              <option value="sol">Solana (SOL)</option>
-              <option value="trx">Tron (TRX)</option>
-              <option value="matic">Polygon (MATIC)</option>
-              <option value="avax">Avalanche (AVAX)</option>
-            </select>
+              <span>
+                {selectedUser 
+                  ? (() => {
+                      const u = users.find(x => x.id === selectedUser);
+                      return u ? `${formatName(u)} (${u.email})` : 'Select a user...';
+                    })()
+                  : 'Select a user...'}
+              </span>
+              <span className="text-gray-400 font-bold">?</span>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Select User(s): <span className="text-red-500">*</span></label>
-            <Select
-              isMulti
-              options={userOptions}
-              value={selectedUsers}
-              onChange={(v: any) => setSelectedUsers(v)}
-              className="text-base"
-              styles={{
-                control: (base) => ({
-                    ...base,
-                    minHeight: '48px',
-                    borderRadius: '2px',
-                    borderColor: '#D1D5DB'
-                })
-              }}
-              placeholder="Search by name, email, or UID..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Sending Wallet Address: <span className="text-gray-400 font-normal">(Optional)</span></label>
-            <input 
-              type="text"
-              value={fromAddress}
-              onChange={e => setFromAddress(e.target.value)}
-              placeholder="The crypto address the funds were sent from"
-              className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-base text-gray-700 font-mono"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Transaction ID / Blockchain ID: <span className="text-gray-400 font-normal">(Optional)</span></label>
-            <input 
-              type="text"
-              value={txHash}
-              onChange={e => setTxHash(e.target.value)}
-              placeholder="TxHash"
-              className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-base text-gray-700 font-mono"
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Sending Wallet Address: <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <input 
+                type="text"
+                value={fromAddress}
+                onChange={e => setFromAddress(e.target.value)}
+                placeholder="The crypto address the funds were sent from"
+                className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-base text-gray-700 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Transaction ID / Blockchain ID: <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <input 
+                type="text"
+                value={txHash}
+                onChange={e => setTxHash(e.target.value)}
+                placeholder="TxHash"
+                className="w-full border border-gray-300 p-3 rounded-sm outline-none focus:border-[#3498db] text-base text-gray-700 font-mono"
+              />
+            </div>
+          </>
 
           <div>
             <div className="flex justify-between items-end mb-2">
@@ -303,7 +289,7 @@ export default function AdminAddFundsPage() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-bold text-gray-700 mb-2">Date: <span className="text-red-500">*</span></label>
               <input 
@@ -326,48 +312,31 @@ export default function AdminAddFundsPage() {
           </div>
 
           <div className="flex flex-col mt-4 gap-4 border-t border-gray-100 pt-6">
-            <div className="bg-gray-100 px-4 py-3 rounded-sm border border-gray-200 w-full overflow-x-auto">
-              <span className="text-gray-600 text-sm font-bold block mb-2">Current Usable Balances (Selected Asset): </span>
-              {selectedUsers.length > 0 ? (
-                <div className="space-y-1">
-                    {selectedUsers.map(su => (
-                        <div key={su.value} className="text-sm flex justify-between">
-                            <span className="text-gray-600">{su.label.split(' (')[0]}:</span>
-                            <span className="text-[#3498db] font-bold">{getBalanceDisplay(su.data, walletType)}</span>
-                        </div>
-                    ))}
-                </div>
-              ) : <span className="text-sm text-gray-400 italic">Select users to view their balances</span>}
+            <div className="bg-gray-100 px-4 py-2 inline-flex self-start rounded border border-gray-200">
+              <span className="text-gray-600 text-sm font-bold">Usable Balance: </span>
+              {selectedUser && users.find(u => u.id === selectedUser) ? (
+                <span className="ml-2 text-[#3498db] font-bold">
+                    {getBalanceDisplay(users.find(u => u.id === selectedUser), walletType)}
+                </span>
+              ) : <span className="ml-2 text-gray-400">Select a user</span>}
             </div>
 
-            <div className="flex flex-col md:flex-row gap-6 mt-2">
-                <label className="flex items-center space-x-2 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
-                    checked={sendEmail} 
-                    onChange={e => setSendEmail(e.target.checked)} 
-                    className="w-4 h-4 text-[#3498db] border-gray-300 rounded cursor-pointer" 
-                  />
-                  <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600">Send Email Notification</span>
-                </label>
-                
-                <label className="flex items-center space-x-2 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
-                    checked={isGasFee} 
-                    onChange={e => setIsGasFee(e.target.checked)} 
-                    className="w-4 h-4 text-[#3498db] border-gray-300 rounded cursor-pointer" 
-                  />
-                  <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600">Mark as Gas Fee Deposit</span>
-                </label>
-            </div>
+            <label className="flex items-center space-x-2 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                checked={sendEmail} 
+                onChange={e => setSendEmail(e.target.checked)} 
+                className="w-4 h-4 text-[#3498db] border-gray-300 rounded cursor-pointer" 
+              />
+              <span className="text-sm font-bold text-red-600 group-hover:text-red-700">Send Email Notification</span>
+            </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
+          <div className="flex space-x-3 pt-2">
             <button 
               type="submit" 
               disabled={submitting}
-              className="w-full sm:w-auto bg-[#00BFA5] text-white font-bold py-3 sm:py-2.5 px-8 rounded-sm hover:bg-[#00a38c] transition-colors disabled:bg-gray-400 shadow-sm text-sm uppercase tracking-wide"
+              className="bg-[#00BFA5] text-white font-bold py-2.5 px-8 rounded-sm hover:bg-[#00a38c] transition-colors disabled:bg-gray-400 shadow-sm text-sm uppercase tracking-wide"
             >
               {submitting ? 'Processing...' : 'Submit'}
             </button>
@@ -376,17 +345,97 @@ export default function AdminAddFundsPage() {
               onClick={() => {
                 setAmount("");
                 setAmountUsd("");
-                setSelectedUsers([]);
+                setSelectedUser("");
+                setFromName("");
+                setFromBank("");
                 setFromAddress("");
                 setTxHash("");
               }}
-              className="w-full sm:w-auto bg-white border border-gray-300 text-gray-600 font-bold py-3 sm:py-2.5 px-8 rounded-sm hover:bg-gray-50 transition-colors shadow-sm text-sm uppercase tracking-wide"
+              className="bg-white border border-gray-300 text-gray-600 font-bold py-2.5 px-8 rounded-sm hover:bg-gray-50 transition-colors shadow-sm text-sm uppercase tracking-wide"
             >
               Cancel
             </button>
           </div>
         </form>
       </div>
+
+      {showUserModal && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded shadow-xl w-full max-w-[600px] flex flex-col max-h-[80vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between bg-white border-b-2 border-blue-500 px-4 py-3">
+              <h2 className="text-blue-500 text-sm font-bold tracking-widest uppercase">Select User</h2>
+              <button 
+                onClick={() => setShowUserModal(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white w-6 h-6 flex items-center justify-center rounded-sm transition-colors text-xs font-bold"
+              >
+                X
+              </button>
+            </div>
+            
+            {/* Search */}
+            <div className="p-4 border-b border-gray-100">
+              <input 
+                type="text"
+                placeholder="Search by name, email, User ID, or wallet address..."
+                value={userSearch}
+                onChange={e => setUserSearch(e.target.value)}
+                className="w-full border border-blue-200 p-3 rounded outline-none focus:border-blue-500 text-base"
+              />
+            </div>
+            
+            {/* User List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50">
+              {users.filter(u => {
+                const search = userSearch.toLowerCase();
+                const name = formatName(u).toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                const uid = (u.id || '').toLowerCase();
+                
+                // Address searching
+                const addresses = [
+                  u.address, u.trx_address, u.sol_address, u.btc_address,
+                  u.usdt_erc20_address, u.usdt_trc20_address, u.usdt_bep20_address,
+                  u.usdc_bep20_address, u.usdc_solana_address
+                ].filter(Boolean).map(a => String(a).toLowerCase());
+                
+                const matchesAddress = addresses.some(a => a.includes(search));
+                
+                return name.includes(search) || email.includes(search) || uid.includes(search) || matchesAddress;
+              }).map(u => (
+                <div 
+                  key={u.id}
+                  onClick={() => {
+                    setSelectedUser(u.id);
+                    setShowUserModal(false);
+                    setUserSearch("");
+                  }}
+                  className={`p-3 border rounded cursor-pointer transition-colors ${selectedUser === u.id ? 'bg-blue-50 border-blue-400' : 'bg-white border-gray-200 hover:bg-gray-100'}`}
+                >
+                  <div className="font-bold text-gray-800 text-base">{formatName(u)}</div>
+                  <div className="text-gray-500 text-sm mt-1">{u.email}</div>
+                  <div className="text-gray-400 text-xs mt-1 font-mono">UID: {u.id}</div>
+                </div>
+              ))}
+              {users.length > 0 && users.filter(u => {
+                const search = userSearch.toLowerCase();
+                const name = formatName(u).toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                const uid = (u.id || '').toLowerCase();
+                const addresses = [
+                  u.address, u.trx_address, u.sol_address, u.btc_address,
+                  u.usdt_erc20_address, u.usdt_trc20_address, u.usdt_bep20_address,
+                  u.usdc_bep20_address, u.usdc_solana_address
+                ].filter(Boolean).map(a => String(a).toLowerCase());
+                const matchesAddress = addresses.some(a => a.includes(search));
+                return name.includes(search) || email.includes(search) || uid.includes(search) || matchesAddress;
+              }).length === 0 && (
+                <div className="text-center text-sm text-gray-500 py-8">No users match your search.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
