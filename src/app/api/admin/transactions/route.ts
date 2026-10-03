@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from('transactions')
-      .select('*, profiles(first_name, last_name, email, wallet_balance)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (type === 'deposit') {
@@ -24,10 +24,25 @@ export async function GET(request: Request) {
       query = query.lt('amount', 0);
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const { data: txs, error: txError } = await query;
+    if (txError) throw txError;
 
-    return NextResponse.json(data);
+    // Fetch all profiles so we can manually join them, since Supabase complains about missing FKs
+    const { data: profiles, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, first_name, last_name, email, wallet_balance, total_assets');
+    
+    if (profileError) throw profileError;
+
+    const mergedData = (txs || []).map(tx => {
+      const userProfile = (profiles || []).find(p => p.id === tx.user_id);
+      return {
+        ...tx,
+        profiles: userProfile || null
+      };
+    });
+
+    return NextResponse.json(mergedData);
   } catch (err: any) {
     console.error('API Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
