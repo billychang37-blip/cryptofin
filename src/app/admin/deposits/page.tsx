@@ -9,16 +9,16 @@ export default function AdminDepositsPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchDeposits = async () => {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*, profiles(first_name, last_name, email, wallet_balance, total_assets)')
-      .in('type', ['deposit', 'crypto_deposit'])
-      .order('created_at', { ascending: false });
-      
-    if (data && !error) {
+    try {
+      const res = await fetch('/api/admin/transactions?type=deposit');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
       setDeposits(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {

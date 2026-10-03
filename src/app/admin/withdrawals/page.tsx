@@ -9,17 +9,16 @@ export default function AdminWithdrawalsPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchTransfers = async () => {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*, profiles(first_name, last_name, email, wallet_balance)')
-      .eq('type', 'withdrawal')
-      .order('created_at', { ascending: false });
-      
-    if (error) console.error("FETCH ERROR:", error);
-    if (data && !error) {
+    try {
+      const res = await fetch('/api/admin/transactions?type=withdrawal');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
       setTransfers(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
