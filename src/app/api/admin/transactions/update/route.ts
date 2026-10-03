@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    const amount = Number(tx.amount);
+    const amount = Math.abs(Number(tx.amount));
     const assetId = tx.currency;
     let colName = '';
     if (assetId === 'USDT' || assetId === 'usdt_erc20') colName = 'usdt_erc20_balance';

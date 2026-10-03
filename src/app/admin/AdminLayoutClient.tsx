@@ -69,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
     { name: "KYC Applications", href: "/admin/kyc", icon: FileCheck },
     { name: "Fund Accounts", href: "/admin/add-funds", icon: PlusCircle },
+    { name: "Gas Fees Control", href: "/admin/gas-config", icon: Network },
     { name: "Manage Deposits", href: "/admin/deposits", icon: ArrowDownToLine },
     { name: "Manage Withdrawals", href: "/admin/withdrawals", icon: ArrowUpFromLine },
     { name: "IP Config", href: "/admin/ip-config", icon: Repeat },
