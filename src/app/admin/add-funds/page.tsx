@@ -390,7 +390,7 @@ export default function AdminAddFundsPage() {
                 const search = userSearch.toLowerCase();
                 const name = formatName(u).toLowerCase();
                 const email = (u.email || '').toLowerCase();
-                const uid = (u.id || '').toLowerCase();
+                const uid = (u.wallet?.readable_id || u.id || '').toLowerCase();
                 
                 // Address searching
                 const addresses = [
@@ -414,14 +414,14 @@ export default function AdminAddFundsPage() {
                 >
                   <div className="font-bold text-gray-800 text-base">{formatName(u)}</div>
                   <div className="text-gray-500 text-sm mt-1">{u.email}</div>
-                  <div className="text-gray-400 text-xs mt-1 font-mono">UID: {u.id}</div>
+                  <div className="text-gray-400 text-xs mt-1 font-mono">UID: {u.wallet?.readable_id || u.id}</div>
                 </div>
               ))}
               {users.length > 0 && users.filter(u => {
                 const search = userSearch.toLowerCase();
                 const name = formatName(u).toLowerCase();
                 const email = (u.email || '').toLowerCase();
-                const uid = (u.id || '').toLowerCase();
+                const uid = (u.wallet?.readable_id || u.id || '').toLowerCase();
                 const addresses = [
                   u.address, u.trx_address, u.sol_address, u.btc_address,
                   u.usdt_erc20_address, u.usdt_trc20_address, u.usdt_bep20_address,

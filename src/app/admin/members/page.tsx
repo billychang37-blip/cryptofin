@@ -166,7 +166,7 @@ export default function AdminMembersPage() {
                       <td className="p-2 border-r border-gray-200 text-blue-600 underline">
                         {u.email}
                       </td>
-                      <td className="p-2 text-center border-r border-gray-200 font-mono">{u.generated_user_id || u.account_number || 'N/A'}</td>
+                      <td className="p-2 text-center border-r border-gray-200 font-mono">{u.wallet?.readable_id || u.generated_user_id || u.account_number || 'N/A'}</td>
                       <td className="p-2 text-center border-r border-gray-200 text-blue-600 underline">{u.phone || '-'}</td>
                       <td className="p-2 text-center border-r border-gray-200">{formatDate(u.created_at)}</td>
                       <td className="p-2 text-center border-r border-gray-200">-</td>
