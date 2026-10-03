@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Copy, ExternalLink, CheckCircle2, XCircle, Clock } from "lucide-react";
-import AssetIcon from "@/components/dashboard/AssetIcon";
+import { AssetIcon } from "@/components/dashboard/AssetIcon";
 
 const supabase = createClient();
 
