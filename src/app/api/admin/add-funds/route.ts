@@ -121,29 +121,33 @@ export async function POST(request: Request) {
         const symbol = currency.replace('_', ' ');
         const username = (user.first_name || user.last_name) ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
         
-        // Text only format for deliverability
-        const emailText = `Deposit Successful
+        const displayUsername = (user.first_name || user.last_name) 
+          ? `${user.first_name || ''} ${user.last_name || ''}`.trim() 
+          : (user.email ? user.email.split('@')[0] : 'Member');
+          
+        const emailText = `Hello ${displayUsername},
+
+Good news! Your deposit of ${numAmount} ${symbol} has been successfully verified and credited to your Cryptofin account.
+
+You can now view your updated balance in your dashboard.
+
+Best regards,
+The Cryptofin Team`;
         
-Hello ${username},
-
-Your deposit of ${numAmount} ${symbol} has been successfully processed and credited to your account.
-
-Transaction Details
-Asset: ${symbol}
-Amount: ${numAmount}
-Date: ${new Date(date || Date.now()).toLocaleString()}
-${fromAddress ? `Sending Address: ${fromAddress}` : ''}
-${txHash ? `Transaction Hash: ${txHash}` : ''}
-
-Log in to your account to view your updated balance.
-
-Thank you.`;
+        const emailHtml = `<div style="font-family: sans-serif; color: #333; line-height: 1.5; max-width: 600px; margin: 0 auto;">
+<h2 style="color: #111;">Deposit Successful</h2>
+<p>Hello ${displayUsername},</p>
+<p>Good news! Your deposit of <strong>${numAmount} ${symbol}</strong> has been successfully verified and credited to your Cryptofin account.</p>
+<p>You can now view your updated balance in your dashboard.</p>
+<p>Best regards,<br>The Cryptofin Team</p>
+</div>`;
 
         await resend.emails.send({
           from: 'Cryptofin Notifications <noreply@auth.cryptofin.org>',
           to: user.email,
           subject: 'Deposit Successful',
-          text: emailText
+          text: emailText,
+          html: emailHtml
         });
       } catch (emailErr) {
         console.error("Failed to send email to " + user.email, emailErr);

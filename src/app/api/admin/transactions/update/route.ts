@@ -83,8 +83,8 @@ export async function POST(request: Request) {
         const { data: userProfile } = await supabase.from('profiles').select('email, first_name, last_name').eq('id', tx.user_id).single();
         if (userProfile?.email) {
             const emailTemplate = tx.type === 'withdrawal' 
-                ? emailCompletedWithdrawal(amount, assetId, tx.to_address, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User')
-                : emailCompletedDeposit(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User');
+                ? emailCompletedWithdrawal(amount, assetId, tx.to_address, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || (userProfile.email ? userProfile.email.split('@')[0] : 'Member'))
+                : emailCompletedDeposit(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || (userProfile.email ? userProfile.email.split('@')[0] : 'Member'));
             await sendEmail({ to: userProfile.email, ...emailTemplate });
         }
         
@@ -105,8 +105,8 @@ export async function POST(request: Request) {
         const { data: userProfile } = await supabase.from('profiles').select('email, first_name, last_name').eq('id', tx.user_id).single();
         if (userProfile?.email) {
             const emailTemplate = tx.type === 'withdrawal' 
-                ? emailReversedWithdrawal(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User')
-                : emailFailedDeposit(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User');
+                ? emailReversedWithdrawal(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || (userProfile.email ? userProfile.email.split('@')[0] : 'Member'))
+                : emailFailedDeposit(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || (userProfile.email ? userProfile.email.split('@')[0] : 'Member'));
             await sendEmail({ to: userProfile.email, ...emailTemplate });
         }
     }

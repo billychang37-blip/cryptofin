@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     let userName = 'User';
     if (user) {
         const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single();
-        if (profile) userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User';
+        if (profile) userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || (user.email ? user.email.split('@')[0] : 'Member');
     }
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
