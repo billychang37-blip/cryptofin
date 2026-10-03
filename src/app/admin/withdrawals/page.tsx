@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import Link from "next/link";
 import { Copy } from "lucide-react";
 
