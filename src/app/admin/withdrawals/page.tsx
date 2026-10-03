@@ -12,9 +12,10 @@ export default function AdminWithdrawalsPage() {
     const { data, error } = await supabase
       .from('transactions')
       .select('*, profiles(first_name, last_name, email, wallet_balance)')
-      .lt('amount', 0)
+      .eq('type', 'withdrawal')
       .order('created_at', { ascending: false });
       
+    if (error) console.error("FETCH ERROR:", error);
     if (data && !error) {
       setTransfers(data);
     }

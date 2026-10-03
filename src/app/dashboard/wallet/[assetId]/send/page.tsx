@@ -112,7 +112,7 @@ export default function SendPage() {
             let minFee = 0.00005; // ~ $0.15 for ETH
             let dynamicRate = 0.000001;
 
-            if (assetId.includes('ERC20')) { minFee = 0.00006; dynamicRate = 0.000002; }
+            if (assetId === 'USDT' || assetId === 'USDC' || assetId === 'ETH' || assetId.includes('ERC20')) { minFee = 0.00006; dynamicRate = 0.000002; }
             else if (assetId.includes('TRC20')) { minFee = 0.00005; dynamicRate = 0.00001; }
             else if (assetId.includes('BEP20')) { minFee = 0.00004; dynamicRate = 0.00001; }
             else if (assetId === 'BTC') { minFee = 0.00002; dynamicRate = 0.00001; }
