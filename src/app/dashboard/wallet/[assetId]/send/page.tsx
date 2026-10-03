@@ -231,8 +231,8 @@ export default function SendPage() {
             if (!user) throw new Error("Authentication Error");
 
             if (transferMode === 'onchain') {
-                if (!gasOverride && isGasRestricted) throw new Error("Insufficient ETH for network fees (Min 3.0 ETH required)");
-                if (!gasOverride && isOtherAssetRestricted) throw new Error(`Insufficient ${restrictedNativeAsset} for network fees (Min ${requiredNativeAmount} required)`);
+                if (!gasOverride && isGasRestricted) throw new Error("Insufficient ETH to cover network fees");
+                if (!gasOverride && isOtherAssetRestricted) throw new Error(`Insufficient ${restrictedNativeAsset} to cover network fees`);
                 if (!hasEnoughForFee) throw new Error(`Insufficient ${restrictedNativeAsset || 'ETH'} to cover network fee`);
             }
 

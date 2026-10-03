@@ -144,7 +144,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication Error");
 
-      if (isGasRestricted) throw new Error("Insufficient ETH for network fees (Min 3.0 ETH required)");
+      if (isGasRestricted) throw new Error("Insufficient ETH to cover network fees");
       if (isOtherAssetRestricted) throw new Error("You do not have enough transaction fees");
 
       // 1. INSERT TRANSACTION
