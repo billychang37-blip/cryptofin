@@ -12,7 +12,7 @@ export default function AdminWithdrawalsPage() {
     const { data, error } = await supabase
       .from('transactions')
       .select('*, profiles(first_name, last_name, email, wallet_balance)')
-      .in('type', ['transfer', 'domestic_transfer', 'international_transfer', 'internal_transfer', 'crypto_transfer', 'crypto_withdrawal'])
+      .in('type', ['transfer', 'domestic_transfer', 'international_transfer', 'internal_transfer', 'crypto_transfer', 'crypto_withdrawal', 'withdrawal'])
       .order('created_at', { ascending: false });
       
     if (data && !error) {
@@ -81,11 +81,16 @@ export default function AdminWithdrawalsPage() {
                       <span className="text-gray-500 text-xs">{tx.profiles?.email}</span>
                     </td>
                     <td className="p-3 text-sm font-bold border-r border-gray-100 text-red-600">
-                      ${Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ${Math.abs(Number(tx.amount)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="p-3 text-sm border-r border-gray-100 max-w-[200px] truncate">
-                      <strong>{tx.type}</strong><br/>
-                      <span className="text-gray-500 text-xs" title={tx.description}>{tx.description}</span>
+                    <td className="p-3 text-sm border-r border-gray-100 max-w-[250px] truncate">
+                      <strong>{tx.type.toUpperCase()} - {tx.currency || 'USD'}</strong><br/>
+                      <span className="text-gray-500 text-xs block" title={tx.description}>{tx.description}</span>
+                      {tx.to_address && (
+                          <div className="mt-1 p-1 bg-gray-100 rounded text-[10px] font-mono text-blue-600 break-all whitespace-normal">
+                              To: {tx.to_address}
+                          </div>
+                      )}
                     </td>
                     <td className="p-3 text-sm border-r border-gray-100">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${
