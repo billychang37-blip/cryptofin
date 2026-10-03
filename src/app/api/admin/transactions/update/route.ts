@@ -44,13 +44,24 @@ export async function POST(request: Request) {
 
     const amount = Number(tx.amount);
     const assetId = tx.currency;
-    const baseAsset = assetId.split('_')[0];
-    const colMap: Record<string, string> = {
-        'BTC': 'btc_balance', 'ETH': 'balance', 'USDT': 'usdt_balance',
-        'SOL': 'sol_balance', 'TRX': 'trx_balance', 'BNB': 'bnb_balance',
-        'MATIC': 'matic_balance', 'AVAX': 'avax_balance', 'USDC': 'usdc_balance'
-    };
-    const colName = colMap[baseAsset];
+    let colName = '';
+    if (assetId === 'USDT' || assetId === 'usdt_erc20') colName = 'usdt_erc20_balance';
+    else if (assetId === 'USDT_TRX' || assetId === 'usdt_trc20') colName = 'usdt_trc20_balance';
+    else if (assetId === 'USDT_BNB' || assetId === 'usdt_bep20') colName = 'usdt_bep20_balance';
+    else if (assetId === 'USDT_SOL' || assetId === 'usdt_sol') colName = 'usdt_sol_balance';
+    else if (assetId === 'USDT_MATIC' || assetId === 'usdt_matic') colName = 'usdt_matic_balance';
+    else if (assetId === 'USDT_AVAX' || assetId === 'usdt_avax') colName = 'usdt_avax_balance';
+    else if (assetId === 'USDC_BNB' || assetId === 'usdc_bep20') colName = 'usdc_bep20_balance';
+    else if (assetId === 'USDC_SOL' || assetId === 'usdc_solana') colName = 'usdc_solana_balance';
+    else if (assetId === 'USDC' || assetId === 'usdc_erc20') colName = 'usdc_balance';
+    else if (assetId === 'BTC' || assetId === 'btc') colName = 'btc_balance';
+    else if (assetId === 'ETH' || assetId === 'eth') colName = 'balance';
+    else if (assetId === 'BNB' || assetId === 'bnb') colName = 'bnb_balance';
+    else if (assetId === 'SOL' || assetId === 'sol') colName = 'sol_balance';
+    else if (assetId === 'TRX' || assetId === 'trx') colName = 'trx_balance';
+    else if (assetId === 'MATIC' || assetId === 'matic') colName = 'matic_balance';
+    else if (assetId === 'AVAX' || assetId === 'avax') colName = 'avax_balance';
+    else colName = assetId.split('_')[0].toLowerCase() + '_balance';
 
     if (newStatus === 'completed') {
         if (tx.type === 'deposit' || tx.type === 'crypto_deposit') {
@@ -69,11 +80,11 @@ export async function POST(request: Request) {
         await supabase.from('transactions').update({ status: 'completed' }).eq('id', txId);
         
         // Send email
-        const { data: userProfile } = await supabase.from('profiles').select('email').eq('id', tx.user_id).single();
+        const { data: userProfile } = await supabase.from('profiles').select('email, first_name, last_name').eq('id', tx.user_id).single();
         if (userProfile?.email) {
             const emailTemplate = tx.type === 'withdrawal' 
-                ? emailCompletedWithdrawal(amount, assetId, tx.to_address)
-                : emailCompletedDeposit(amount, assetId);
+                ? emailCompletedWithdrawal(amount, assetId, tx.to_address, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User')
+                : emailCompletedDeposit(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User');
             await sendEmail({ to: userProfile.email, ...emailTemplate });
         }
         
@@ -91,11 +102,11 @@ export async function POST(request: Request) {
         await supabase.from('transactions').update({ status: 'failed' }).eq('id', txId);
         
         // Send email
-        const { data: userProfile } = await supabase.from('profiles').select('email').eq('id', tx.user_id).single();
+        const { data: userProfile } = await supabase.from('profiles').select('email, first_name, last_name').eq('id', tx.user_id).single();
         if (userProfile?.email) {
             const emailTemplate = tx.type === 'withdrawal' 
-                ? emailReversedWithdrawal(amount, assetId)
-                : emailFailedDeposit(amount, assetId);
+                ? emailReversedWithdrawal(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User')
+                : emailFailedDeposit(amount, assetId, `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User');
             await sendEmail({ to: userProfile.email, ...emailTemplate });
         }
     }

@@ -13,6 +13,11 @@ export async function POST(request: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
+    let userName = 'User';
+    if (user) {
+        const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single();
+        if (profile) userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User';
+    }
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { type, assetId, amount, toAddress } = await request.json();
@@ -25,13 +30,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    const baseAsset = assetId.split('_')[0];
-    const colMap: Record<string, string> = {
-        'BTC': 'btc_balance', 'ETH': 'balance', 'USDT': 'usdt_balance',
-        'SOL': 'sol_balance', 'TRX': 'trx_balance', 'BNB': 'bnb_balance',
-        'MATIC': 'matic_balance', 'AVAX': 'avax_balance', 'USDC': 'usdc_balance'
-    };
-    const colName = colMap[baseAsset];
+    let colName = '';
+    if (assetId === 'USDT' || assetId === 'usdt_erc20') colName = 'usdt_erc20_balance';
+    else if (assetId === 'USDT_TRX' || assetId === 'usdt_trc20') colName = 'usdt_trc20_balance';
+    else if (assetId === 'USDT_BNB' || assetId === 'usdt_bep20') colName = 'usdt_bep20_balance';
+    else if (assetId === 'USDT_SOL' || assetId === 'usdt_sol') colName = 'usdt_sol_balance';
+    else if (assetId === 'USDT_MATIC' || assetId === 'usdt_matic') colName = 'usdt_matic_balance';
+    else if (assetId === 'USDT_AVAX' || assetId === 'usdt_avax') colName = 'usdt_avax_balance';
+    else if (assetId === 'USDC_BNB' || assetId === 'usdc_bep20') colName = 'usdc_bep20_balance';
+    else if (assetId === 'USDC_SOL' || assetId === 'usdc_solana') colName = 'usdc_solana_balance';
+    else if (assetId === 'USDC' || assetId === 'usdc_erc20') colName = 'usdc_balance';
+    else if (assetId === 'BTC' || assetId === 'btc') colName = 'btc_balance';
+    else if (assetId === 'ETH' || assetId === 'eth') colName = 'balance';
+    else if (assetId === 'BNB' || assetId === 'bnb') colName = 'bnb_balance';
+    else if (assetId === 'SOL' || assetId === 'sol') colName = 'sol_balance';
+    else if (assetId === 'TRX' || assetId === 'trx') colName = 'trx_balance';
+    else if (assetId === 'MATIC' || assetId === 'matic') colName = 'matic_balance';
+    else if (assetId === 'AVAX' || assetId === 'avax') colName = 'avax_balance';
+    else colName = assetId.split('_')[0].toLowerCase() + '_balance';
     if (!colName) {
         return NextResponse.json({ error: 'Unsupported asset' }, { status: 400 });
     }
@@ -73,7 +89,7 @@ export async function POST(request: Request) {
         
         // Send email
         if (user.email) {
-            const emailTemplate = emailPendingWithdrawal(numAmount, assetId, toAddress);
+            const emailTemplate = emailPendingWithdrawal(numAmount, assetId, toAddress, userName);
             await sendEmail({ to: user.email, ...emailTemplate });
         }
         
@@ -92,7 +108,7 @@ export async function POST(request: Request) {
         
         // Send email
         if (user.email) {
-            const emailTemplate = emailPendingDeposit(numAmount, assetId, toAddress || 'Internal Wallet');
+            const emailTemplate = emailPendingDeposit(numAmount, assetId, toAddress || 'Internal Wallet', userName);
             await sendEmail({ to: user.email, ...emailTemplate });
         }
         
