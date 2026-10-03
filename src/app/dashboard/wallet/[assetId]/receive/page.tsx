@@ -36,6 +36,8 @@ export default function ReceivePage() {
    
    const supabase = createClient();
    const [wallet, setWallet] = useState<any>(null);
+   const [amount, setAmount] = useState('');
+   const [loading, setLoading] = useState(false);
 
    useEffect(() => {
       const fetchWallet = async () => {
@@ -78,6 +80,36 @@ export default function ReceivePage() {
       toast.success("Address Copied");
    };
 
+   const handleDeposit = async () => {
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+         toast.error("Please enter a valid deposit amount");
+         return;
+      }
+      setLoading(true);
+      try {
+         const res = await fetch('/api/wallet/transactions/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               type: 'deposit',
+               assetId: assetId,
+               amount: Number(amount),
+               toAddress: address
+            })
+         });
+         const data = await res.json();
+         if (!res.ok) throw new Error(data.error);
+         
+         toast.success("Deposit request logged successfully!");
+         setAmount('');
+         router.push('/dashboard/transactions');
+      } catch (err: any) {
+         toast.error(err.message || 'Failed to log deposit');
+      } finally {
+         setLoading(false);
+      }
+   };
+
    return (
       <div className="flex-1 bg-transparent text-white flex flex-col items-center">
          <div className="w-full px-6 pt-10 pb-4 self-start max-w-4xl mx-auto">
@@ -107,6 +139,26 @@ export default function ReceivePage() {
                   Loading...
                </div>
             )}
+         </div>
+
+         <div className="w-full max-w-4xl mx-auto px-6 flex flex-col gap-4 mt-4 mb-6">
+            <div className="bg-[#1c1c1c] rounded-xl p-4 border border-[#333]">
+               <label className="text-neutral-400 text-xs uppercase tracking-widest font-bold mb-2 block">Amount Sent</label>
+               <input 
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-transparent text-white text-lg font-mono outline-none border-b border-neutral-700 pb-2 mb-4 placeholder:text-neutral-600 focus:border-[#10b981] transition-colors"
+               />
+               <button 
+                  onClick={handleDeposit}
+                  disabled={loading}
+                  className="w-full bg-[#10b981] hover:bg-[#059669] text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+               >
+                  {loading ? 'Processing...' : "I've Deposited"}
+               </button>
+            </div>
          </div>
 
          <div className="w-full max-w-4xl mx-auto px-6 flex flex-col gap-0 text-[13px] text-neutral-400 mt-2 pb-24">

@@ -26,29 +26,21 @@ export default function AdminWithdrawalsPage() {
   }, []);
 
   const handleUpdateStatus = async (txId: string, newStatus: string, userId: string, amount: number) => {
-    if (!confirm(`Are you sure you want to ${newStatus} this withdrawal?`)) return;
+    if (!confirm(Are you sure you want to  this transaction?)) return;
 
-    // If rejecting a transfer, refund the wallet balance.
-    // (Assuming the balance was deducted when they initiated it).
-    if (newStatus === 'rejected') {
-      const { data: profile } = await supabase.from('profiles').select('wallet_balance, total_assets').eq('id', userId).single();
-      if (profile) {
-        const newBal = Number(profile.wallet_balance || 0) + Number(amount);
-        const newTotal = Number(profile.total_assets || 0) + Number(amount);
-        await supabase.from('profiles').update({ wallet_balance: newBal, total_assets: newTotal }).eq('id', userId);
-      }
-    }
-
-    const { error } = await supabase
-      .from('transactions')
-      .update({ status: newStatus })
-      .eq('id', txId);
-      
-    if (!error) {
-      alert(`Withdrawal ${newStatus}`);
-      fetchTransfers();
-    } else {
-      alert(`Error updating status: ${error.message}`);
+    try {
+        const res = await fetch('/api/admin/transactions/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ txId, newStatus })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        
+        alert(Transaction  successfully.);
+        fetchWithdrawals();
+    } catch (err: any) {
+        alert(Error updating status: );
     }
   };
 
