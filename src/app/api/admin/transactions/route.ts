@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     // Fetch all profiles so we can manually join them, since Supabase complains about missing FKs
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, email, wallet_balance, total_assets');
+      .select('id, first_name, last_name, email');
     
     if (profileError) throw profileError;
 
