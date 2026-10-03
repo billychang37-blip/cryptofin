@@ -48,13 +48,21 @@ export default function AssetsPage() {
 
    const getBalance = (assetId: string) => {
       if (!wallet) return 0;
-      const baseAsset = assetId.split('_')[0];
       const map: Record<string, number> = {
-         'BTC': wallet.btc_balance, 'ETH': wallet.balance, 'USDT': wallet.usdt_balance,
+         'BTC': wallet.btc_balance, 'ETH': wallet.balance, 
+         'USDT': wallet.usdt_erc20_balance ?? wallet.usdt_balance, 
+         'USDT_TRX': wallet.usdt_trc20_balance ?? wallet.usdt_balance,
+         'USDT_BNB': wallet.usdt_bep20_balance ?? wallet.usdt_balance,
+         'USDC_BNB': wallet.usdc_bep20_balance ?? wallet.usdc_balance,
+         'USDC_SOL': wallet.usdc_solana_balance ?? wallet.usdc_balance,
+         'USDC': wallet.usdc_balance,
          'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance, 'BNB': wallet.bnb_balance, 
-         'MATIC': wallet.matic_balance, 'AVAX': wallet.avax_balance, 'USDC': wallet.usdc_balance
+         'MATIC': wallet.matic_balance, 'AVAX': wallet.avax_balance,
+         'USDT_SOL': wallet.usdt_sol_balance ?? wallet.usdt_balance,
+         'USDT_MATIC': wallet.usdt_matic_balance ?? wallet.usdt_balance,
+         'USDT_AVAX': wallet.usdt_avax_balance ?? wallet.usdt_balance,
       };
-      return map[baseAsset] || 0;
+      return map[assetId] || 0;
    };
 
    return (

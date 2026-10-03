@@ -33,14 +33,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       .eq('user_id', id)
       .maybeSingle();
 
-    // Map real wallet fields to the fields expected by the Admin UI
+    // Assuming DB has been migrated to include these columns
     const mappedWallet = wallet ? {
       ...wallet,
-      usdt_erc20_balance: wallet.usdt_balance,
-      usdt_trc20_balance: wallet.usdt_balance,
-      usdt_bep20_balance: wallet.usdt_balance,
-      usdc_bep20_balance: wallet.usdc_balance,
-      usdc_solana_balance: wallet.usdc_balance,
       eth_balance: wallet.balance,
       usdt_erc20_address: wallet.address,
       usdt_bep20_address: wallet.address,
@@ -91,8 +86,13 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
     const walletFields = {
       // Core Balances
-      usdt_balance: body.usdt_balance ?? body.usdt_erc20_balance ?? body.usdt_trc20_balance ?? body.usdt_bep20_balance,
-      usdc_balance: body.usdc_balance ?? body.usdc_solana_balance ?? body.usdc_bep20_balance,
+      usdt_erc20_balance: body.usdt_erc20_balance,
+      usdt_trc20_balance: body.usdt_trc20_balance,
+      usdt_bep20_balance: body.usdt_bep20_balance,
+      usdc_bep20_balance: body.usdc_bep20_balance,
+      usdc_solana_balance: body.usdc_solana_balance,
+      usdt_balance: body.usdt_balance,
+      usdc_balance: body.usdc_balance,
       btc_balance: body.btc_balance,
       balance: body.eth_balance, // ETH is 'balance'
       sol_balance: body.sol_balance,

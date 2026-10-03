@@ -26,7 +26,7 @@ export default function AdminDepositsPage() {
   }, []);
 
   const handleUpdateStatus = async (txId: string, newStatus: string, userId: string, amount: number) => {
-    if (!confirm(Are you sure you want to  this transaction?)) return;
+    if (!confirm(`Are you sure you want to ${newStatus} this transaction?`)) return;
 
     try {
         const res = await fetch('/api/admin/transactions/update', {
@@ -37,10 +37,10 @@ export default function AdminDepositsPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         
-        alert(Transaction  successfully.);
+        alert(`Transaction ${newStatus} successfully.`);
         fetchDeposits();
     } catch (err: any) {
-        alert(Error updating status: );
+        alert(`Error updating status: ${err.message}`);
     }
   };
 

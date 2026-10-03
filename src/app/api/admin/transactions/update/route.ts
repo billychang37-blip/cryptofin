@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         }
     }
 
-    return NextResponse.json({ success: true, message: Transaction \ });
+    return NextResponse.json({ success: true, message: `Transaction ${newStatus} successfully` });
 
   } catch (err: any) {
     console.error("ADMIN TX ERROR:", err);
