@@ -52,6 +52,8 @@ export async function POST(request: Request) {
     else if (walletType === 'usdt_avax') balanceField = 'usdt_avax_balance';
     else if (walletType === 'usdc_bep20') balanceField = 'usdc_bep20_balance';
     else if (walletType === 'usdc_solana') balanceField = 'usdc_solana_balance';
+    else if (walletType === 'usdc_matic') balanceField = 'usdc_matic_balance';
+    else if (walletType === 'usdc_avax') balanceField = 'usdc_avax_balance';
     else if (walletType === 'btc') balanceField = 'btc_balance';
     else if (walletType === 'eth') balanceField = 'balance'; // ETH is 'balance'
     else if (walletType === 'bnb') balanceField = 'bnb_balance';

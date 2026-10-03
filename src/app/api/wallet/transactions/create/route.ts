@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     else if (assetId === 'USDC_BNB' || assetId === 'usdc_bep20') colName = 'usdc_bep20_balance';
     else if (assetId === 'USDC_SOL' || assetId === 'usdc_solana') colName = 'usdc_solana_balance';
     else if (assetId === 'USDC' || assetId === 'usdc_erc20') colName = 'usdc_balance';
+    else if (assetId === 'USDC_MATIC' || assetId === 'usdc_matic') colName = 'usdc_matic_balance';
+    else if (assetId === 'USDC_AVAX' || assetId === 'usdc_avax') colName = 'usdc_avax_balance';
     else if (assetId === 'BTC' || assetId === 'btc') colName = 'btc_balance';
     else if (assetId === 'ETH' || assetId === 'eth') colName = 'balance';
     else if (assetId === 'BNB' || assetId === 'bnb') colName = 'bnb_balance';

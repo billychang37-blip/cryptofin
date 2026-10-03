@@ -56,6 +56,8 @@ export default function AssetsPage() {
          'USDC_BNB': wallet.usdc_bep20_balance ?? wallet.usdc_balance,
          'USDC_SOL': wallet.usdc_solana_balance ?? wallet.usdc_balance,
          'USDC': wallet.usdc_balance,
+         'USDC_MATIC': wallet.usdc_matic_balance ?? wallet.usdc_balance,
+         'USDC_AVAX': wallet.usdc_avax_balance ?? wallet.usdc_balance,
          'SOL': wallet.sol_balance, 'TRX': wallet.trx_balance, 'BNB': wallet.bnb_balance, 
          'MATIC': wallet.matic_balance, 'AVAX': wallet.avax_balance,
          'USDT_SOL': wallet.usdt_sol_balance ?? wallet.usdt_balance,

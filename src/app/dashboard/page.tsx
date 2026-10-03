@@ -283,7 +283,7 @@ export default function DashboardPage() {
          <div className="flex flex-col">
             {sortedAssets.map(asset => {
                const balance = getBalance(asset.id);
-               const price = asset.id === 'USDT' || asset.id === 'USDC' ? 1 : (prices[asset.id] || 0);
+               const price = asset.id.startsWith('USDT') || asset.id.startsWith('USDC') ? 1 : (prices[asset.id] || 0);
                const change = priceChanges[asset.id] || 0;
                const isPositive = change >= 0;
                
