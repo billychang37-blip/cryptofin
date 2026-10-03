@@ -71,7 +71,8 @@ export async function POST(request: Request) {
             const { data: wallet } = await supabase.from('wallets').select(colName).eq('user_id', tx.user_id).single();
             const currentBal = Number(wallet?.[colName as keyof typeof wallet] || 0);
             
-            await supabase.from('wallets').update({ [colName]: currentBal + amount }).eq('user_id', tx.user_id);
+            const { error: wErr } = await supabase.from('wallets').update({ [colName]: currentBal + amount }).eq('user_id', tx.user_id);
+            if (wErr) throw new Error('DB Error updating wallet: ' + wErr.message);
             
             // Note: also update profiles.wallet_balance and total_assets if needed, but that's messy.
             // Let's just update the specific asset balance.
@@ -96,7 +97,8 @@ export async function POST(request: Request) {
             const { data: wallet } = await supabase.from('wallets').select(colName).eq('user_id', tx.user_id).single();
             const currentBal = Number(wallet?.[colName as keyof typeof wallet] || 0);
             
-            await supabase.from('wallets').update({ [colName]: currentBal + amount }).eq('user_id', tx.user_id);
+            const { error: wErr } = await supabase.from('wallets').update({ [colName]: currentBal + amount }).eq('user_id', tx.user_id);
+            if (wErr) throw new Error('DB Error updating wallet: ' + wErr.message);
         }
         // If deposit, do nothing to balance, it was never credited.
         

@@ -111,10 +111,11 @@ export async function POST(request: Request) {
     // Update wallet balance
     if (balanceField) {
       const currentBalance = parseFloat(wallet[balanceField] || 0);
-      await supabaseAdmin
+      const { error: updateErr } = await supabaseAdmin
         .from('wallets')
         .update({ [balanceField]: currentBalance + numAmount })
         .eq('user_id', selectedUser);
+      if (updateErr) throw new Error("DB Error updating wallet: " + updateErr.message);
     }
 
     // Send email if requested
