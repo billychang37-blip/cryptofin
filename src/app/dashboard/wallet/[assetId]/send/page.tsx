@@ -220,7 +220,7 @@ export default function SendPage() {
     }
 
     const canProceed = numAmount > 0 && numAmount <= balance && address.trim().length > 0 && hasEnoughForFee &&
-        (transferMode === 'internal' || (!isGasRestricted && !isOtherAssetRestricted));
+        (transferMode === 'internal' || ( (gasOverride || !isGasRestricted) && (gasOverride || !isOtherAssetRestricted) ));
 
     const handleSend = async () => {
         if (!canProceed) return;
@@ -407,17 +407,17 @@ export default function SendPage() {
                                    Not enough balance
                                </div>
                            )}
-                           {(transferMode === 'onchain' && isGasRestricted) && (
+                           {(transferMode === 'onchain' && !gasOverride && isGasRestricted) && (
                                <div className="text-[10px] font-bold text-red-500 mt-0.5">
                                    Insufficient ETH for network fees
                                </div>
                            )}
-                           {(transferMode === 'onchain' && isOtherAssetRestricted) && (
+                           {(transferMode === 'onchain' && !gasOverride && isOtherAssetRestricted) && (
                                <div className="text-[10px] font-bold text-red-500 mt-0.5">
                                    Insufficient {restrictedNativeAsset} for network fees
                                </div>
                            )}
-                           {(transferMode === 'onchain' && !isGasRestricted && !isOtherAssetRestricted && !hasEnoughForFee) && (
+                           {(transferMode === 'onchain' && (gasOverride || (!isGasRestricted && !isOtherAssetRestricted)) && !hasEnoughForFee) && (
                                <div className="text-[10px] font-bold text-red-500 mt-0.5">
                                    Insufficient {restrictedNativeAsset} for network fees
                                </div>
