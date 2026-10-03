@@ -38,7 +38,7 @@ export default function AdminWithdrawalsPage() {
         if (!res.ok) throw new Error(data.error);
         
         alert(`Transaction ${newStatus} successfully.`);
-        fetchWithdrawals();
+        fetchTransfers();
     } catch (err: any) {
         alert(`Error updating status: ${err.message}`);
     }
