@@ -76,9 +76,9 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
         let minFee = 0.001;
         let dynamicRate = 0.0001;
 
-        if (selectedNetwork.short === 'ERC20') { minFee = 0.0015; dynamicRate = 0.0005; }
-        else if (selectedNetwork.short === 'TRC20') { minFee = 0.0005; dynamicRate = 0.0001; }
-        else if (selectedNetwork.short === 'BEP20') { minFee = 0.0004; dynamicRate = 0.0001; }
+        if (selectedNetwork.short === 'ERC20') { minFee = 0.0003; dynamicRate = 0.0002; } // ~$0.90
+        else if (selectedNetwork.short === 'TRC20') { minFee = 0.0001; dynamicRate = 0.00005; } // ~$0.30
+        else if (selectedNetwork.short === 'BEP20') { minFee = 0.00005; dynamicRate = 0.00005; } // ~$0.15
         else if (selectedNetwork.short === 'BTC') { minFee = 0.0002; dynamicRate = 0.0001; }
         else if (selectedNetwork.short === 'SOL') { minFee = 0.00001; dynamicRate = 0.00001; }
         else if (selectedNetwork.short === 'ARB') { minFee = 0.0001; dynamicRate = 0.00005; }
