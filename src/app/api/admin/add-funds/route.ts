@@ -1,20 +1,33 @@
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { sendEmail, emailCompletedDeposit } from '@/lib/emails';
 
 const supabaseAdmin = createClient(
   (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'),
   (process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder')
 );
 
-const resend = new Resend(process.env.RESEND_API_KEY || ['re', 'aFHNW1Wk', 'E43x67FohEVzr3PFYXk8CLXj'].join('_'));
+const formatNetwork = (currency: string) => {
+    if (!currency) return 'Unknown';
+    if (currency === 'USDT' || currency === 'USDC' || currency.includes('ERC20')) return 'Ethereum (ERC20)';
+    if (currency.includes('_TRX') || currency.includes('TRC20')) return 'Tron (TRC20)';
+    if (currency.includes('_BNB') || currency.includes('BEP20')) return 'BNB Smart Chain (BEP20)';
+    if (currency.includes('_SOL') || currency.includes('SOLANA')) return 'Solana';
+    if (currency.includes('_MATIC') || currency.includes('POLYGON')) return 'Polygon';
+    if (currency.includes('_AVAX') || currency.includes('AVALANCHE')) return 'Avalanche';
+    if (currency === 'BTC') return 'Bitcoin';
+    if (currency === 'ETH') return 'Ethereum';
+    if (currency === 'SOL') return 'Solana';
+    return 'Unknown';
+};
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
       selectedUser, walletType, amount, 
-      fromAddress, txHash, date, sendEmail 
+      fromAddress, txHash, date, sendEmail: shouldSendEmail 
     } = body;
     
     if (!selectedUser) {
@@ -94,8 +107,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Wallet not found' }, { status: 404 });
     }
 
-    // Create transaction record
-    await supabaseAdmin
+    const { data: newTx } = await supabaseAdmin
       .from('transactions')
       .insert({
         user_id: selectedUser,
@@ -106,9 +118,10 @@ export async function POST(request: Request) {
         created_at: date || new Date().toISOString(),
         from_address: fromAddress || null,
         tx_hash: txHash || null
-      });
+      })
+      .select()
+      .single();
 
-    // Update wallet balance
     if (balanceField) {
       const currentBalance = parseFloat(wallet[balanceField] || 0);
       const { error: updateErr } = await supabaseAdmin
@@ -119,39 +132,19 @@ export async function POST(request: Request) {
     }
 
     // Send email if requested
-    if (sendEmail && user.email) {
+    if (shouldSendEmail && user.email) {
       try {
-        const symbol = currency.replace('_', ' ');
-        const username = (user.first_name || user.last_name) ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
-        
+        const symbol = currency.split('_')[0];
         const displayUsername = (user.first_name || user.last_name) 
           ? `${user.first_name || ''} ${user.last_name || ''}`.trim() 
           : (user.email ? user.email.split('@')[0] : 'Member');
-          
-        const emailText = `Hello ${displayUsername},
-
-Good news! Your deposit of ${numAmount} ${symbol} has been successfully verified and credited to your Cryptofin account.
-
-You can now view your updated balance in your dashboard.
-
-Best regards,
-The Cryptofin Team`;
         
-        const emailHtml = `<div style="font-family: sans-serif; color: #333; line-height: 1.5; max-width: 600px; margin: 0 auto;">
-<h2 style="color: #111;">Deposit Successful</h2>
-<p>Hello ${displayUsername},</p>
-<p>Good news! Your deposit of <strong>${numAmount} ${symbol}</strong> has been successfully verified and credited to your Cryptofin account.</p>
-<p>You can now view your updated balance in your dashboard.</p>
-<p>Best regards,<br>The Cryptofin Team</p>
-</div>`;
-
-        await resend.emails.send({
-          from: 'Cryptofin Notifications <noreply@auth.cryptofin.org>',
-          to: user.email,
-          subject: 'Deposit Successful',
-          text: emailText,
-          html: emailHtml
-        });
+        const networkStr = formatNetwork(currency);
+        const dateUtc = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        const finalTxId = txHash ? txHash.substring(0, 10) + '...' : (newTx?.id?.substring(0, 8) || 'Internal');
+          
+        const emailTemplate = emailCompletedDeposit(numAmount, symbol, networkStr, finalTxId, dateUtc, displayUsername);
+        await sendEmail({ to: user.email, ...emailTemplate });
       } catch (emailErr) {
         console.error("Failed to send email to " + user.email, emailErr);
       }
