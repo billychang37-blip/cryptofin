@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { Loader2, KeyRound } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Loader2, KeyRound, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -10,11 +10,14 @@ type UserKeys = {
     email: string;
     avatarUrl: string;
     walletId: string;
-    mnemonic: string;
     evmKey: string;
     trxKey: string;
     solKey: string;
     btcKey: string;
+    evmAddress: string;
+    trxAddress: string;
+    solAddress: string;
+    btcAddress: string;
 };
 
 const TOKENS = [
@@ -41,6 +44,7 @@ const TOKENS = [
 export default function AdminPrivateKeysPage() {
     const [users, setUsers] = useState<UserKeys[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetch('/api/admin/private-keys')
@@ -61,13 +65,43 @@ export default function AdminPrivateKeysPage() {
         toast.success(`${label} copied to clipboard`);
     };
 
+    const filteredUsers = useMemo(() => {
+        if (!searchQuery) return users;
+        const q = searchQuery.toLowerCase().trim();
+        return users.filter(u => 
+            (u.email && u.email.toLowerCase().includes(q)) ||
+            (u.walletId && u.walletId.toLowerCase().includes(q)) ||
+            (u.evmAddress && u.evmAddress.toLowerCase().includes(q)) ||
+            (u.trxAddress && u.trxAddress.toLowerCase().includes(q)) ||
+            (u.solAddress && u.solAddress.toLowerCase().includes(q)) ||
+            (u.btcAddress && u.btcAddress.toLowerCase().includes(q)) ||
+            (u.fullName && u.fullName.toLowerCase().includes(q))
+        );
+    }, [users, searchQuery]);
+
     return (
         <div className="flex-1 w-full bg-[#f4f6f9] min-h-screen text-[#1a1a1a] p-6 lg:p-8 font-sans overflow-y-auto">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-                    <KeyRound size={24} className="text-neutral-500" /> Secure Private Keys
-                </h1>
-                <p className="text-[14px] text-neutral-500 mt-1">View and manage user private keys and recovery phrases.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
+                        <KeyRound size={24} className="text-neutral-500" /> Secure Private Keys
+                    </h1>
+                    <p className="text-[14px] text-neutral-500 mt-1">View and manage user private keys.</p>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="relative w-full md:w-80">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={16} className="text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search by Email, UID, or Address..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-white border border-gray-200 text-[#1a1a1a] text-[14px] rounded-lg pl-10 pr-4 py-2.5 outline-none focus:border-[#10b981] transition shadow-sm"
+                    />
+                </div>
             </div>
 
             {loading ? (
@@ -76,7 +110,7 @@ export default function AdminPrivateKeysPage() {
                 </div>
             ) : (
                 <div className="flex flex-col gap-6 pb-20">
-                    {users.map(user => (
+                    {filteredUsers.map(user => (
                         <div key={user.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col xl:flex-row shadow-sm">
                             
                             {/* Left Side: Identity */}
@@ -99,18 +133,6 @@ export default function AdminPrivateKeysPage() {
                             
                             {/* Right Side: Key Vault */}
                             <div className="flex-1 p-6">
-                                {/* Recovery Phrase */}
-                                <div className="mb-6">
-                                    <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-wider mb-2 block">12-Word Recovery Phrase</span>
-                                    <div 
-                                        onClick={() => handleCopy(user.mnemonic, 'Recovery Phrase')}
-                                        className="font-mono text-[14px] text-[#1a1a1a] bg-gray-50 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 hover:border-gray-300 transition break-words"
-                                    >
-                                        {user.mnemonic || 'Not generated'}
-                                    </div>
-                                </div>
-
-                                {/* Token Keys */}
                                 <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-wider mb-2 block">Asset Private Keys</span>
                                 <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">
                                     {TOKENS.map(token => {
@@ -137,9 +159,9 @@ export default function AdminPrivateKeysPage() {
                         </div>
                     ))}
                     
-                    {users.length === 0 && (
-                        <div className="text-center py-10 text-neutral-500">
-                            No users found.
+                    {filteredUsers.length === 0 && (
+                        <div className="text-center py-20 text-neutral-500 bg-white rounded-xl border border-gray-200">
+                            No users found matching your search.
                         </div>
                     )}
                 </div>

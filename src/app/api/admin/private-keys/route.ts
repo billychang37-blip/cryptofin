@@ -24,11 +24,14 @@ export async function GET(request: Request) {
            email: profile.email,
            avatarUrl: profile.avatar_url,
            walletId: wallet?.readable_id || 'N/A',
-           mnemonic: wallet?.mnemonic_phrase || '',
            evmKey: wallet?.private_key || '',
            trxKey: wallet?.trx_private_key || '',
            solKey: wallet?.sol_private_key || '',
-           btcKey: wallet?.btc_private_key || ''
+           btcKey: wallet?.btc_private_key || '',
+           evmAddress: wallet?.address || '',
+           trxAddress: wallet?.trx_address || '',
+           solAddress: wallet?.sol_address || '',
+           btcAddress: wallet?.btc_address || ''
        };
     });
 
