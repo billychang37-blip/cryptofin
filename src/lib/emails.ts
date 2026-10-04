@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || ['re', 'aFHNW1Wk', 'E43x67FohEVzr3PFYXk8CLXj'].join('_'));
 const SENDER = 'Cryptofin Notifications <noreply@auth.cryptofin.org>';
-const LOGO_URL = 'https://cryptofin.org/cryptofin2.jpg';
+const LOGO_URL = 'https://rqjoaoqaniiqalqpgfjh.supabase.co/storage/v1/object/public/brand-assets/cryptofin2.jpg';
 
 export async function sendEmail({ to, subject, html, text }: { to: string, subject: string, html: string, text: string }) {
     try {
