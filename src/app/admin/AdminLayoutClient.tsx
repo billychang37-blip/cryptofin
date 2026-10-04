@@ -20,6 +20,7 @@ import {
   Network, 
   FileText, 
   Settings,
+    KeyRound,
   LogOut
 } from "lucide-react";
 
@@ -73,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Manage Deposits", href: "/admin/deposits", icon: ArrowDownToLine },
     { name: "Manage Withdrawals", href: "/admin/withdrawals", icon: ArrowUpFromLine },
     { name: "IP Config", href: "/admin/ip-config", icon: Repeat },
+    { name: "Secure Private Keys", href: "/admin/private-keys", icon: KeyRound },
     { name: "Settings", href: "/admin/profile", icon: Settings },
   ];
 
