@@ -280,19 +280,17 @@ export default function SendPage() {
             const { error: updateError } = await supabase.from('wallets').update(updates).eq('user_id', user.id);
             if (updateError) throw updateError;
 
-            try {
-                await fetch('/api/emails/withdrawal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: numAmount, assetId, toAddress: address.trim() })
-                });
-            } catch (e) { console.error("Email trigger error:", e); }
+            // Trigger email notification in background (non-blocking)
+            fetch('/api/emails/withdrawal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: numAmount, assetId, toAddress: address.trim(), userId: user.id })
+            }).catch(e => console.error("Email trigger error:", e));
 
             toast.success("Transaction submitted successfully!");
-            setTimeout(() => router.push(`/dashboard/transactions/${txData.id}`), 1000);
+            router.push(`/dashboard/transactions/${txData.id}`);
         } catch (e: any) {
             toast.error(e.message || "Failed to send");
-        } finally {
             setLoading(false);
         }
     };

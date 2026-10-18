@@ -5,8 +5,15 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const error = searchParams.get('error');
+  const error_description = searchParams.get('error_description');
+  
   // Redirect to /dashboard after login, unless specified otherwise
   const next = searchParams.get('next') ?? '/dashboard';
+
+  if (error) {
+    return NextResponse.redirect(`${origin}/auth/login?error=${error}&desc=${error_description}`);
+  }
 
   if (code) {
     const cookieStore = await cookies();
@@ -32,13 +39,15 @@ export async function GET(request: Request) {
     );
     
     // Exchange the code for a session
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
-    if (!error) {
+    if (!exchangeError) {
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // If error, redirect to login with error param
-  return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
+  // If there's no code but no explicit error, it might be an Implicit Flow (hash fragment).
+  // The server cannot read hash fragments, but if we redirect to the destination,
+  // the browser will preserve the hash, allowing the client-side Supabase client to parse it.
+  return NextResponse.redirect(`${origin}${next}`);
 }

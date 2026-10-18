@@ -1,8 +1,8 @@
 "use client";
 
 import { createClient } from '@/lib/supabase';
-import { Loader2, ChevronLeft, Check, Copy, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Loader2, ChevronLeft, Check, Copy, X, AlertCircle } from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -28,50 +28,112 @@ const NETWORKS: Record<string, string> = {
     'AVAX': 'Avalanche'
 };
 
-export default function TransactionReceipt({ params }: { params: { id: string } }) {
+export default function TransactionReceipt({ params }: { params?: { id?: string } }) {
     const router = useRouter();
+    const routeParams = useParams();
+    const txId = (routeParams?.id as string) || params?.id;
     const supabase = createClient();
+
     const [tx, setTx] = useState<any>(null);
     const [price, setPrice] = useState(0);
     const [senderAddr, setSenderAddr] = useState<string>('');
-    const txId = params.id;
+    const [loading, setLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
+        if (!txId) {
+            setNotFound(true);
+            setLoading(false);
+            return;
+        }
+
+        let isMounted = true;
+        let attempts = 0;
+
         const fetchTx = async () => {
-            const { data, error } = await supabase.from('transactions').select('*').eq('id', txId).single();
-            if (data) {
-                setTx(data);
-                const assetBase = data.currency.split('_')[0];
-                try {
-                    const res = await fetch('/api/prices');
-                    const prices = await res.json();
-                    setPrice(prices[assetBase] || 1.00);
-                } catch(e) {
-                    setPrice(1.00);
+            try {
+                const { data, error } = await supabase.from('transactions').select('*').eq('id', txId).single();
+                if (data) {
+                    if (!isMounted) return;
+                    setTx(data);
+                    setLoading(false);
+                    setNotFound(false);
+
+                    const assetBase = (data.currency || 'ETH').split('_')[0];
+                    try {
+                        const res = await fetch('/api/prices');
+                        const prices = await res.json();
+                        if (isMounted) setPrice(prices[assetBase] || (assetBase.includes('USD') ? 1.00 : 0));
+                    } catch(e) {
+                        if (isMounted) setPrice(assetBase.includes('USD') ? 1.00 : 0);
+                    }
+                    
+                    // Get wallet for from address
+                    const { data: w } = await supabase.from('wallets').select('*').eq('user_id', data.user_id).single();
+                    if (w && isMounted) {
+                        let addr = '';
+                        const curr = data.currency || '';
+                        if (['BTC'].includes(curr)) addr = w.btc_address;
+                        else if (curr.includes('TRX') || curr.includes('TRC20')) addr = w.trx_address;
+                        else if (curr.includes('SOL')) addr = w.sol_address;
+                        else addr = w.address;
+                        setSenderAddr(addr);
+                    }
+                } else if (error) {
+                    // Quick retry in case transaction was just written
+                    if (attempts < 3) {
+                        attempts++;
+                        setTimeout(fetchTx, 800);
+                        return;
+                    }
+                    if (isMounted) {
+                        setNotFound(true);
+                        setLoading(false);
+                    }
                 }
-                
-                // Get wallet for from address
-                const { data: w } = await supabase.from('wallets').select('*').eq('user_id', data.user_id).single();
-                if (w) {
-                    let addr = '';
-                    if (['BTC'].includes(data.currency)) addr = w.btc_address;
-                    else if (['TRX', 'USDT_TRX'].includes(data.currency)) addr = w.trx_address;
-                    else if (['SOL', 'USDT_SOL', 'USDC_SOL'].includes(data.currency)) addr = w.sol_address;
-                    else addr = w.address;
-                    setSenderAddr(addr);
+            } catch (err) {
+                console.error("Receipt fetch error:", err);
+                if (isMounted) {
+                    setNotFound(true);
+                    setLoading(false);
                 }
             }
         };
+
         fetchTx();
         
-        const interval = setInterval(fetchTx, 10000);
-        return () => clearInterval(interval);
+        const interval = setInterval(fetchTx, 8000);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, [txId, supabase]);
 
-    if (!tx) {
+    if (loading) {
         return (
-            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-                <Loader2 className="animate-spin text-[#10b981]" size={32} />
+            <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
+                <Loader2 className="animate-spin text-[#10b981] mb-3" size={36} />
+                <p className="text-neutral-400 text-sm font-medium animate-pulse">Loading transaction receipt...</p>
+            </div>
+        );
+    }
+
+    if (notFound || !tx) {
+        return (
+            <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-400">
+                    <AlertCircle size={32} />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Transaction Not Found</h2>
+                <p className="text-neutral-400 text-sm max-w-sm mb-6">
+                    We could not locate this transaction receipt. It may still be processing or may have been removed.
+                </p>
+                <button
+                    onClick={() => router.push('/dashboard/transactions')}
+                    className="px-6 py-2.5 bg-[#10b981] hover:bg-[#0ea371] text-black font-bold rounded-xl text-sm transition"
+                >
+                    View All Transactions
+                </button>
             </div>
         );
     }
@@ -197,6 +259,25 @@ export default function TransactionReceipt({ params }: { params: { id: string } 
                                 <Copy size={16} />
                             </button>
                         </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 mt-10">
+                        <button
+                            onClick={() => {
+                                const details = `Cryptofin Transaction Receipt\nStatus: ${statusText}\nAsset: ${assetBase} (${assetNetwork})\nAmount: ${amountAbs.toFixed(4)} ${assetBase} ($${usdAmount.toFixed(2)})\nTx Hash: ${refDisplay}\nDate: ${format(new Date(tx.created_at), 'yyyy-MM-dd HH:mm:ss')} UTC`;
+                                navigator.clipboard.writeText(details);
+                                toast.success("Receipt details copied to clipboard");
+                            }}
+                            className="flex-1 py-3 px-4 rounded-xl border border-white/10 hover:border-white/20 bg-[#161618] hover:bg-[#1e1e22] text-white text-sm font-bold flex items-center justify-center gap-2 transition"
+                        >
+                            <Copy size={16} /> Copy Summary
+                        </button>
+                        <button
+                            onClick={() => router.push('/dashboard/transactions')}
+                            className="flex-1 py-3 px-4 rounded-xl bg-[#10b981] hover:bg-[#0ea371] text-black text-sm font-bold flex items-center justify-center transition"
+                        >
+                            All Transactions
+                        </button>
                     </div>
                 </div>
             </div>
