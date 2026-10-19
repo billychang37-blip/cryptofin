@@ -1,9 +1,24 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { Trash2, Edit, Box, Download, X, Search, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { 
+  FileCheck, 
+  Clock, 
+  CheckCircle2, 
+  XCircle, 
+  Search, 
+  Download, 
+  Eye, 
+  Trash2, 
+  X, 
+  Loader2, 
+  Copy,
+  RefreshCw,
+  User,
+  ShieldCheck,
+  Globe
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface KycRequest {
@@ -15,6 +30,7 @@ interface KycRequest {
   image_url: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  updated_at?: string;
   profiles?: {
     first_name?: string;
     last_name?: string;
@@ -28,18 +44,19 @@ interface KycRequest {
 export default function AdminKycPage() {
   const [requests, setRequests] = useState<KycRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState<string | null>(null);
-  const [imageModal, setImageModal] = useState<{ url: string; name: string } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [imageModal, setImageModal] = useState<{ url: string; name: string; docType: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isDownloading, setIsDownloading] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (isManual = false) => {
+    if (isManual) setRefreshing(true);
     try {
       const res = await fetch('/api/admin/kyc', { cache: 'no-store' });
       if (res.ok) {
@@ -47,77 +64,88 @@ export default function AdminKycPage() {
         if (data.requests) {
           setRequests(data.requests);
         }
+      } else {
+        toast.error("Failed to load KYC applications");
       }
     } catch (err) {
-      console.error(err);
+      console.error("KYC fetch error:", err);
+      toast.error("Error loading KYC requests");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleAction = async (applicationId: string, userId: string, action: 'approve' | 'reject') => {
-    if (!window.confirm(`Are you sure you want to ${action} this KYC request?`)) return;
-    
-    setProcessing(applicationId);
-    
+  const handleAction = async (applicationId: string, userId: string, action: 'approve' | 'reject' | 'pending') => {
+    const actionLabel = action === 'approve' ? 'approve' : action === 'reject' ? 'reject' : 'reset';
+    if (!window.confirm(`Are you sure you want to ${actionLabel} this KYC application?`)) return;
+
+    setProcessingId(applicationId);
+
     try {
       const res = await fetch('/api/admin/kyc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ applicationId, userId, action })
       });
-      if (res.ok) {
-        const targetStatus = action === 'approve' ? 'approved' : 'rejected';
-        setRequests(prev => prev.map(r => r.id === applicationId ? { ...r, status: targetStatus } : r));
-        toast.success(`KYC request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`);
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const targetStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'pending';
+        // Optimistic state update for instant UI feedback
+        setRequests(prev => prev.map(req => req.id === applicationId ? { ...req, status: targetStatus } : req));
+        toast.success(`KYC application ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'updated'} successfully`);
       } else {
-        toast.error("Action failed.");
+        toast.error(data.error || "Action failed");
       }
     } catch (err) {
-      toast.error("Error processing action.");
+      toast.error("Error processing KYC action");
     } finally {
-      setProcessing(null);
+      setProcessingId(null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this KYC application?")) return;
+    if (!window.confirm("Are you sure you want to delete this KYC application record?")) return;
+
     try {
       const res = await fetch(`/api/admin/kyc?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         setRequests(prev => prev.filter(r => r.id !== id));
-        toast.success("Record deleted");
+        toast.success("Application deleted");
       } else {
-        toast.error("Failed to delete record");
+        toast.error("Failed to delete application");
       }
     } catch (e) {
-      toast.error("Error deleting record");
+      toast.error("Error deleting application");
     }
   };
 
-  // Direct single-click download via Blob (no redirect to another page)
+  // Direct single-click download via Blob (no page redirect)
   const downloadImageDirectly = async (imageUrl: string, name: string) => {
     if (!imageUrl) return;
     setIsDownloading(true);
     try {
       toast.info("Downloading document image...");
       const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error("Fetch failed");
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `KYC_${name.replace(/\s+/g, '_')}.jpg`;
+      link.download = `KYC_${name.replace(/[^a-zA-Z0-9_-]/g, '_')}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
       toast.success("Document downloaded successfully.");
     } catch (err) {
-      // Fallback
+      console.warn("Direct download fallback:", err);
       const link = document.createElement('a');
       link.href = imageUrl;
-      link.download = `KYC_${name.replace(/\s+/g, '_')}.jpg`;
+      link.download = `KYC_${name.replace(/[^a-zA-Z0-9_-]/g, '_')}.jpg`;
       link.target = '_blank';
       document.body.appendChild(link);
       link.click();
@@ -127,282 +155,496 @@ export default function AdminKycPage() {
     }
   };
 
+  const handleCopy = (text: string, label: string) => {
+    if (!text || text === 'N/A') return;
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  // Metrics calculation
+  const metrics = useMemo(() => {
+    const total = requests.length;
+    const pending = requests.filter(r => r.status === 'pending').length;
+    const approved = requests.filter(r => r.status === 'approved').length;
+    const rejected = requests.filter(r => r.status === 'rejected').length;
+    return { total, pending, approved, rejected };
+  }, [requests]);
+
+  // Search & Filter
   const filteredRequests = useMemo(() => {
     return requests.filter(req => {
-      if (activeTab !== 'all' && req.status !== activeTab) {
+      if (statusFilter !== 'all' && req.status !== statusFilter) {
         return false;
       }
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const username = (req.profiles?.full_name || req.profiles?.email || '').toLowerCase();
+        const fullName = (req.profiles?.full_name || '').toLowerCase();
         const email = (req.profiles?.email || '').toLowerCase();
         const uid = (req.profiles?.walletId || '').toLowerCase();
-        const country = (req.country || '').toLowerCase();
         const docNum = (req.document_number || '').toLowerCase();
+        const country = (req.country || '').toLowerCase();
         const docType = (req.document_type || '').toLowerCase();
+        const userId = (req.user_id || '').toLowerCase();
 
-        return username.includes(q) || email.includes(q) || uid.includes(q) || country.includes(q) || docNum.includes(q) || docType.includes(q);
+        const match = 
+          fullName.includes(q) || 
+          email.includes(q) || 
+          uid.includes(q) || 
+          docNum.includes(q) || 
+          country.includes(q) || 
+          docType.includes(q) ||
+          userId.includes(q);
+
+        if (!match) return false;
       }
+
       return true;
     });
-  }, [requests, activeTab, searchQuery]);
-
-  if (loading) return <div className="p-10 text-center font-bold text-gray-600">Loading KYC requests...</div>;
+  }, [requests, statusFilter, searchQuery]);
 
   return (
-    <div className="p-4 md:p-6 bg-white min-h-full font-sans max-w-full">
+    <div className="w-full max-w-full font-sans pb-16">
       
-      {/* Top Tabs */}
-      <div className="flex flex-wrap items-center justify-between border-b border-gray-300 mb-6 pb-1 gap-2">
-        <div className="flex items-center">
-          <button 
-            onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 text-[13px] font-bold uppercase tracking-wide border border-gray-300 border-b-0 ${activeTab === 'all' ? 'text-gray-800 bg-white' : 'text-gray-500 bg-gray-100 hover:bg-gray-200'}`}
-          >
-            Manage KYC ({requests.length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('pending')}
-            className={`px-4 py-2 text-[13px] font-bold uppercase tracking-wide ml-1 border border-b-0 ${activeTab === 'pending' ? 'bg-[#1a8cff] text-white border-[#1a8cff]' : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'}`}
-          >
-            Pending ({requests.filter(r => r.status === 'pending').length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('approved')}
-            className={`px-4 py-2 text-[13px] font-bold uppercase tracking-wide ml-1 border border-b-0 ${activeTab === 'approved' ? 'bg-green-600 text-white border-green-600' : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'}`}
-          >
-            Approved ({requests.filter(r => r.status === 'approved').length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('rejected')}
-            className={`px-4 py-2 text-[13px] font-bold uppercase tracking-wide ml-1 border border-b-0 ${activeTab === 'rejected' ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'}`}
-          >
-            Rejected ({requests.filter(r => r.status === 'rejected').length})
-          </button>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <FileCheck size={24} className="text-blue-600 shrink-0" />
+            <span>KYC Verification Applications</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            Review submitted government ID documents and manage verification statuses.
+          </p>
         </div>
 
-        {/* Quick Search */}
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search KYC..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#f9f9f9] border border-gray-300 rounded text-xs pl-8 pr-3 py-1.5 outline-none focus:border-[#1a8cff]"
-          />
-        </div>
+        <button
+          onClick={() => fetchRequests(true)}
+          disabled={refreshing}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white border border-gray-300 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm self-start sm:self-auto disabled:opacity-60"
+        >
+          <RefreshCw size={14} className={refreshing ? "animate-spin text-blue-600" : ""} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      <h1 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">MANAGE KYC -</h1>
-
-      {/* Main Panel Wrapper */}
-      <div className="border border-gray-300 rounded shadow-sm bg-white overflow-hidden max-w-full">
+      {/* 4 Metric Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         
-        {/* Blue Header */}
-        <div className="bg-[#1a8cff] px-4 py-3 flex items-center justify-between text-white border-b-[4px] border-black">
-          <div className="flex items-center">
-            <Box className="w-5 h-5 mr-3" />
-            <h2 className="text-sm font-bold tracking-widest uppercase">Manage KYC</h2>
+        {/* Total */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block truncate">Total Requests</span>
+            <span className="text-xl sm:text-2xl font-black text-gray-900">{metrics.total}</span>
           </div>
-          <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded">
-            Showing {filteredRequests.length} records
-          </span>
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <FileCheck size={18} />
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse text-[13px]">
-            <thead>
-              <tr className="bg-[#f0f0f0] text-gray-800 uppercase tracking-wider border-b border-gray-300 font-bold">
-                <th className="py-2.5 px-3 border-r border-gray-300 w-12 text-center">#</th>
-                <th className="py-2.5 px-3 border-r border-gray-300">Username</th>
-                <th className="py-2.5 px-3 border-r border-gray-300">Issuing Country</th>
-                <th className="py-2.5 px-3 border-r border-gray-300">Card Type</th>
-                <th className="py-2.5 px-3 border-r border-gray-300">ID Number</th>
-                <th className="py-2.5 px-3 border-r border-gray-300">Status</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-500 font-bold">No records found.</td>
+        {/* Pending */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block truncate">Awaiting Review</span>
+            <span className="text-xl sm:text-2xl font-black text-amber-500">{metrics.pending}</span>
+          </div>
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center font-bold shrink-0">
+            <Clock size={18} />
+          </div>
+        </div>
+
+        {/* Approved */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block truncate">Approved</span>
+            <span className="text-xl sm:text-2xl font-black text-emerald-600">{metrics.approved}</span>
+          </div>
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <CheckCircle2 size={18} />
+          </div>
+        </div>
+
+        {/* Rejected */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block truncate">Rejected</span>
+            <span className="text-xl sm:text-2xl font-black text-red-500">{metrics.rejected}</span>
+          </div>
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center font-bold shrink-0">
+            <XCircle size={18} />
+          </div>
+        </div>
+
+      </div>
+
+      {/* Control Bar: Filters & Search */}
+      <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm mb-5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by Name, Email, UID, Doc #, Country..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#f9fafb] border border-gray-200 text-gray-900 text-xs sm:text-sm rounded-lg pl-9 pr-8 py-2 outline-none focus:border-blue-500 focus:bg-white transition"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          {[
+            { id: 'all', label: 'All', count: metrics.total },
+            { id: 'pending', label: 'Pending', count: metrics.pending },
+            { id: 'approved', label: 'Approved', count: metrics.approved },
+            { id: 'rejected', label: 'Rejected', count: metrics.rejected }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                statusFilter === tab.id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+      </div>
+
+      {/* Main Table Card */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center text-center">
+            <Loader2 className="animate-spin text-blue-600 mb-3" size={28} />
+            <p className="text-xs sm:text-sm font-medium text-gray-500">Loading KYC applications...</p>
+          </div>
+        ) : filteredRequests.length === 0 ? (
+          <div className="py-16 px-4 text-center">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+              <FileCheck size={24} />
+            </div>
+            <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-1">No Applications Found</h3>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+              {searchQuery || statusFilter !== 'all' 
+                ? "No applications match your search and filter criteria." 
+                : "No users have submitted KYC verification requests yet."}
+            </p>
+            {(searchQuery || statusFilter !== 'all') && (
+              <button
+                onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
+                className="mt-3 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-700 transition"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs sm:text-[13px]">
+              <thead>
+                <tr className="bg-[#f9fafb] text-gray-600 uppercase tracking-wider border-b border-gray-200 font-bold text-[11px]">
+                  <th className="py-3 px-3 w-10 text-center">#</th>
+                  <th className="py-3 px-3 min-w-[190px]">User</th>
+                  <th className="py-3 px-3 min-w-[180px]">Document & Country</th>
+                  <th className="py-3 px-3 min-w-[130px]">Proof Photo</th>
+                  <th className="py-3 px-3 min-w-[110px]">Submitted</th>
+                  <th className="py-3 px-3 min-w-[110px] text-center">Status</th>
+                  <th className="py-3 px-3 min-w-[140px] text-right">Actions</th>
                 </tr>
-              ) : (
-                filteredRequests.map((req, index) => {
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredRequests.map((req, index) => {
                   const username = req.profiles?.full_name || req.profiles?.email || 'User';
-                  const isProcessing = processing === req.id;
+                  const email = req.profiles?.email || '';
+                  const uid = req.profiles?.walletId || '';
+                  const isProcessing = processingId === req.id;
+
+                  // Initials for avatar
+                  const initials = username
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase() || 'U';
 
                   return (
-                    <tr key={req.id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <tr key={req.id} className="hover:bg-gray-50/70 transition-colors">
                       
-                      {/* # and delete */}
-                      <td className="py-2.5 px-3 border-r border-gray-200 text-center">
-                        <div className="flex items-center justify-center gap-1.5 text-gray-500">
-                          <span>{index + 1}</span>
+                      {/* # and Delete */}
+                      <td className="py-3 px-3 text-center">
+                        <div className="flex items-center justify-center gap-1 text-gray-400">
+                          <span className="font-mono text-[11px]">{index + 1}</span>
                           <button
                             onClick={() => handleDelete(req.id)}
-                            className="text-gray-400 hover:text-red-600 transition"
-                            title="Delete record"
+                            className="p-1 hover:text-red-600 transition"
+                            title="Delete application"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
-                      
-                      {/* Username */}
-                      <td className="py-2.5 px-3 border-r border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <Edit className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+
+                      {/* User Profile */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2.5">
+                          {req.profiles?.avatar_url ? (
+                            <img 
+                              src={req.profiles.avatar_url} 
+                              alt={username} 
+                              className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0" 
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+                              {initials}
+                            </div>
+                          )}
                           <div className="min-w-0">
-                            <Link href={`/admin/members/${req.user_id}`} className="text-blue-600 hover:underline font-bold block truncate">
+                            <Link 
+                              href={`/admin/members/${req.user_id}`}
+                              className="font-bold text-gray-900 hover:text-blue-600 hover:underline block truncate max-w-[160px]"
+                              title={username}
+                            >
                               {username}
                             </Link>
-                            {req.profiles?.walletId && (
-                              <span className="text-[10px] text-gray-400 font-mono">UID: {req.profiles.walletId}</span>
+                            {email && (
+                              <span className="text-[11px] text-gray-500 block truncate max-w-[160px]" title={email}>
+                                {email}
+                              </span>
+                            )}
+                            {uid && uid !== 'N/A' && (
+                              <button 
+                                onClick={() => handleCopy(uid, 'UID')}
+                                className="text-[10px] text-gray-400 font-mono hover:text-blue-600 flex items-center gap-1 mt-0.5"
+                                title="Click to copy UID"
+                              >
+                                <span>UID: {uid}</span>
+                                <Copy size={10} className="opacity-60" />
+                              </button>
                             )}
                           </div>
                         </div>
                       </td>
 
-                      {/* Issuing Country */}
-                      <td className="py-2.5 px-3 border-r border-gray-200 text-gray-700 whitespace-nowrap">
-                        {req.country || 'N/A'}
-                      </td>
-                      
-                      {/* Card Type */}
-                      <td className="py-2.5 px-3 border-r border-gray-200 text-gray-700 capitalize whitespace-nowrap">
-                        {req.document_type || 'National ID Card'}
-                      </td>
-                      
-                      {/* ID Number */}
-                      <td className="py-2.5 px-3 border-r border-gray-200 text-gray-700 font-mono whitespace-nowrap">
-                        {req.document_number || 'N/A'}
-                      </td>
-
-                      {/* Status & View Image */}
-                      <td className="py-2.5 px-3 border-r border-gray-200 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          {req.image_url ? (
-                            <button 
-                              onClick={() => setImageModal({ url: req.image_url, name: username })}
-                              className="text-blue-600 hover:underline font-bold text-[12px]"
+                      {/* Document Details & Country */}
+                      <td className="py-3 px-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-semibold text-[11px] capitalize">
+                              {req.document_type || 'ID Card'}
+                            </span>
+                            {req.country && req.country !== 'N/A' && (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-gray-600 font-medium bg-blue-50/70 border border-blue-100 px-1.5 py-0.5 rounded">
+                                <Globe size={10} className="text-blue-500" />
+                                {req.country}
+                              </span>
+                            )}
+                          </div>
+                          {req.document_number && req.document_number !== 'N/A' && (
+                            <button
+                              onClick={() => handleCopy(req.document_number, 'ID Number')}
+                              className="font-mono text-[11px] text-gray-600 hover:text-blue-600 flex items-center gap-1 transition"
+                              title="Click to copy ID Number"
                             >
-                              View Image
+                              <span>#{req.document_number}</span>
+                              <Copy size={10} className="opacity-50" />
                             </button>
-                          ) : (
-                            <span className="text-gray-400 text-[12px]">No Image</span>
-                          )}
-                          
-                          {req.status === 'approved' ? (
-                            <span className="bg-green-500 text-white font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">
-                              Approved
-                            </span>
-                          ) : req.status === 'rejected' ? (
-                            <span className="bg-red-500 text-white font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">
-                              Rejected
-                            </span>
-                          ) : (
-                            <span className="bg-amber-500 text-white font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">
-                              Pending
-                            </span>
                           )}
                         </div>
                       </td>
 
+                      {/* Document Proof / Photo */}
+                      <td className="py-3 px-3">
+                        {req.image_url ? (
+                          <div className="flex items-center gap-2">
+                            <div 
+                              onClick={() => setImageModal({ url: req.image_url, name: username, docType: req.document_type || 'ID' })}
+                              className="w-12 h-9 rounded-md bg-gray-100 border border-gray-200 overflow-hidden cursor-pointer hover:border-blue-500 transition relative group shrink-0 shadow-xs"
+                            >
+                              <img src={req.image_url} alt="Proof" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                <Eye size={13} className="text-white" />
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                onClick={() => setImageModal({ url: req.image_url, name: username, docType: req.document_type || 'ID' })}
+                                className="text-[11px] font-bold text-blue-600 hover:underline text-left"
+                              >
+                                View
+                              </button>
+                              <button
+                                onClick={() => downloadImageDirectly(req.image_url, username)}
+                                disabled={isDownloading}
+                                className="text-[10px] text-gray-500 hover:text-blue-600 flex items-center gap-1 transition"
+                                title="Download image directly"
+                              >
+                                <Download size={10} />
+                                <span>Save</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">No image</span>
+                        )}
+                      </td>
+
+                      {/* Submitted Date */}
+                      <td className="py-3 px-3 text-gray-500 text-xs font-medium whitespace-nowrap">
+                        {req.created_at ? new Date(req.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                        {req.status === 'approved' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 size={11} /> Approved
+                          </span>
+                        ) : req.status === 'rejected' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
+                            <XCircle size={11} /> Rejected
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            <Clock size={11} /> Pending
+                          </span>
+                        )}
+                      </td>
+
                       {/* Actions */}
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-3 font-bold text-[13px]">
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5 font-bold text-xs">
                           {isProcessing ? (
-                            <Loader2 size={14} className="animate-spin text-blue-600" />
+                            <Loader2 size={15} className="animate-spin text-blue-600 mx-auto" />
                           ) : req.status === 'pending' ? (
                             <>
-                              <button 
+                              <button
                                 onClick={() => handleAction(req.id, req.user_id, 'approve')}
-                                className="text-green-600 hover:underline"
+                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition text-xs font-bold shadow-xs"
                               >
                                 Approve
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleAction(req.id, req.user_id, 'reject')}
-                                className="text-red-600 hover:underline"
+                                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-700 text-white transition text-xs font-bold shadow-xs"
                               >
                                 Reject
                               </button>
                             </>
                           ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               {req.status !== 'approved' && (
-                                <button 
+                                <button
                                   onClick={() => handleAction(req.id, req.user_id, 'approve')}
-                                  className="text-green-600 hover:underline text-xs"
+                                  className="px-2 py-1 rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 transition text-[11px] font-bold"
                                 >
                                   Approve
                                 </button>
                               )}
                               {req.status !== 'rejected' && (
-                                <button 
+                                <button
                                   onClick={() => handleAction(req.id, req.user_id, 'reject')}
-                                  className="text-red-600 hover:underline text-xs"
+                                  className="px-2 py-1 rounded border border-red-600 text-red-700 hover:bg-red-50 transition text-[11px] font-bold"
                                 >
                                   Reject
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleAction(req.id, req.user_id, 'pending')}
+                                className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition text-[11px] font-bold"
+                                title="Reset to Pending status"
+                              >
+                                Reset
+                              </button>
                             </div>
                           )}
                         </div>
                       </td>
-                      
+
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
       </div>
-      
-      {/* Image Modal */}
+
+      {/* Document Image Modal Preview */}
       {imageModal && (
         <div 
           onClick={() => setImageModal(null)}
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-lg p-5 max-w-3xl w-full max-h-[90vh] flex flex-col relative shadow-2xl animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl p-5 max-w-3xl w-full max-h-[90vh] flex flex-col relative shadow-2xl animate-in zoom-in-95 duration-200"
           >
-            <button 
-              onClick={() => setImageModal(null)} 
-              className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-1.5 shadow-lg hover:bg-red-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex justify-between items-center mb-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-gray-200 mb-4">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Document Preview</h3>
-                <p className="text-xs text-gray-500">{imageModal.name}'s Verification Document</p>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-blue-600" />
+                  <span>Document Verification Preview</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {imageModal.name} &bull; <span className="capitalize">{imageModal.docType}</span>
+                </p>
               </div>
 
-              {/* Direct single-click download */}
-              <button 
-                onClick={() => downloadImageDirectly(imageModal.url, imageModal.name)}
-                disabled={isDownloading}
-                className="flex items-center gap-2 bg-[#1a8cff] text-white px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors text-xs shadow-sm disabled:opacity-60"
-              >
-                {isDownloading ? <Loader2 size={14} className="animate-spin" /> : <Download className="w-4 h-4" />}
-                <span>{isDownloading ? "Downloading..." : "Download Image"}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* 1-Click Blob Download */}
+                <button
+                  onClick={() => downloadImageDirectly(imageModal.url, imageModal.name)}
+                  disabled={isDownloading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition disabled:opacity-60 shadow-xs"
+                >
+                  {isDownloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                  <span>{isDownloading ? "Downloading..." : "Download"}</span>
+                </button>
+
+                <button
+                  onClick={() => setImageModal(null)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition"
+                  title="Close preview"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
-            
-            <div className="flex-1 overflow-auto bg-gray-100 rounded border border-gray-200 flex items-center justify-center min-h-[380px] p-2">
-              <img src={imageModal.url} alt="Document" className="max-w-full max-h-[65vh] object-contain rounded" />
+
+            {/* Modal Image Body */}
+            <div className="flex-1 overflow-auto bg-[#0f172a] rounded-xl flex items-center justify-center p-3 min-h-[360px]">
+              <img 
+                src={imageModal.url} 
+                alt="KYC Document Preview" 
+                className="max-w-full max-h-[64vh] object-contain rounded shadow" 
+              />
             </div>
           </div>
         </div>
       )}
-      
+
     </div>
   );
 }

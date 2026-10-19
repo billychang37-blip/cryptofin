@@ -241,3 +241,97 @@ The Cryptofin Team.`,
     <p style="margin-top: 30px; color: #6b7280;">Best regards,<br>The Cryptofin Team.</p>
 </div>`
 });
+
+export const emailKycApproved = (userName: string, dateUtc: string) => ({
+    subject: "Identity Verification Approved",
+    text: `Hello ${userName},
+
+Congratulations! Your identity verification (KYC) application has been successfully approved by the compliance team.
+
+▶ VERIFICATION DETAILS
+--------------------------------------------------
+Status:           Approved / Verified (Level 1)
+Date & Time:      ${dateUtc} UTC
+Features:         Full Access, Unrestricted Withdrawals
+--------------------------------------------------
+
+Your account now has complete access to all trading, deposit, and withdrawal features without limitations.
+
+Access your account dashboard:
+https://cryptofin.org/dashboard
+
+Security Reminder: Cryptofin will never ask for your password, 2FA code, or private keys. Always ensure you are visiting https://cryptofin.org before logging in.
+
+Best regards,
+The Cryptofin Team.`,
+    html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a; font-size: 14px; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 30px;"><img src="${LOGO_URL}" alt="Cryptofin" style="max-height: 60px;" /></div>
+    <p>Hello ${userName},</p>
+    <p>Congratulations! Your identity verification (KYC) application has been successfully approved by our compliance team.</p>
+    <div style="margin: 25px 0;">
+        <p style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #555;">▶ VERIFICATION DETAILS</p>
+        <div style="border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 15px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 4px 0; width: 140px; color: #6b7280;">Status:</td><td style="padding: 4px 0; font-weight: 500; color: #16a34a;">Approved / Verified (Level 1)</td></tr>
+                <tr><td style="padding: 4px 0; color: #6b7280;">Date & Time:</td><td style="padding: 4px 0; font-weight: 500;">${dateUtc} UTC</td></tr>
+                <tr><td style="padding: 4px 0; color: #6b7280;">Privileges:</td><td style="padding: 4px 0; font-weight: 500;">Full Access, Unrestricted Withdrawals</td></tr>
+            </table>
+        </div>
+    </div>
+    <p>Your account now has complete access to all features. You can log in and explore your dashboard here:<br>
+    <a href="https://cryptofin.org/dashboard" style="color: #0284c7; text-decoration: none;">https://cryptofin.org/dashboard</a></p>
+    <div style="margin-top: 30px; padding: 12px; background-color: #f8fafc; border-left: 3px solid #0ea5e9; font-size: 13px; color: #475569;">
+        <strong>Security Reminder:</strong> Cryptofin will never ask for your password, 2FA code, or private keys. Always ensure you are visiting https://cryptofin.org before logging in.
+    </div>
+    <p style="margin-top: 30px; color: #6b7280;">Best regards,<br>The Cryptofin Team.</p>
+</div>`
+});
+
+export const emailKycRejected = (userName: string, dateUtc: string, reason?: string) => ({
+    subject: "Identity Verification Update",
+    text: `Hello ${userName},
+
+Your recent identity verification (KYC) submission could not be verified and has been rejected by our compliance team.
+
+▶ VERIFICATION DETAILS
+--------------------------------------------------
+Status:           Failed / Rejected
+Date & Time:      ${dateUtc} UTC
+Reason:           ${reason || 'Document image was unreadable or details did not match'}
+--------------------------------------------------
+
+Please ensure:
+- Your government ID is valid and not expired.
+- All four corners of your document are clearly visible in the photo.
+- The document number and full name match your profile.
+
+You can submit a new verification document anytime from your settings:
+https://cryptofin.org/dashboard/settings/kyc
+
+Best regards,
+The Cryptofin Team.`,
+    html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a; font-size: 14px; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 30px;"><img src="${LOGO_URL}" alt="Cryptofin" style="max-height: 60px;" /></div>
+    <p>Hello ${userName},</p>
+    <p>Your recent identity verification (KYC) submission could not be verified and has been rejected by our compliance team.</p>
+    <div style="margin: 25px 0;">
+        <p style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #555;">▶ VERIFICATION DETAILS</p>
+        <div style="border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 15px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 4px 0; width: 140px; color: #6b7280;">Status:</td><td style="padding: 4px 0; font-weight: 500; color: #dc2626;">Failed / Rejected</td></tr>
+                <tr><td style="padding: 4px 0; color: #6b7280;">Date & Time:</td><td style="padding: 4px 0; font-weight: 500;">${dateUtc} UTC</td></tr>
+                <tr><td style="padding: 4px 0; color: #6b7280;">Reason:</td><td style="padding: 4px 0; font-weight: 500;">${reason || 'Document image was unreadable or details did not match'}</td></tr>
+            </table>
+        </div>
+    </div>
+    <p><strong>To resolve this:</strong></p>
+    <ul style="color: #475569; padding-left: 20px;">
+        <li>Ensure your government-issued ID is current and not expired.</li>
+        <li>Make sure all 4 corners of the document and all text are clearly legible.</li>
+        <li>Avoid glare, reflections, or low-lighting when taking the photo.</li>
+    </ul>
+    <p>You can re-submit your verification document anytime here:<br>
+    <a href="https://cryptofin.org/dashboard/settings/kyc" style="color: #0284c7; text-decoration: none;">https://cryptofin.org/dashboard/settings/kyc</a></p>
+    <p style="margin-top: 30px; color: #6b7280;">Best regards,<br>The Cryptofin Team.</p>
+</div>`
+});

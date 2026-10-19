@@ -159,7 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
         
         {/* Top Header */}
         <header className="h-[55px] bg-[#424242] flex items-center justify-between px-6 shadow-md shrink-0 border-b border-gray-600">
@@ -199,8 +199,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 flex flex-col p-4 relative">
-          <div>
+        <main className="flex-1 flex flex-col p-4 relative min-w-0 max-w-full">
+          <div className="w-full min-w-0">
             {children}
           </div>
           

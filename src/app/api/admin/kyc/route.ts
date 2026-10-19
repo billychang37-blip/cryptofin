@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail, emailKycApproved, emailKycRejected } from '@/lib/emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,14 +106,62 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: kycUpdateError.message }, { status: 500 });
     }
 
-    // 2. Also sync to user metadata in Auth
-    if (userId) {
+    // 2. Resolve userId if not passed directly
+    let resolvedUserId = userId;
+    if (!resolvedUserId && targetId) {
+      const { data: appData } = await supabaseAdmin
+        .from('kyc_applications')
+        .select('user_id')
+        .eq('id', targetId)
+        .single();
+      if (appData) {
+        resolvedUserId = appData.user_id;
+      }
+    }
+
+    // 3. Also sync to user metadata in Auth
+    if (resolvedUserId) {
       try {
-        await supabaseAdmin.auth.admin.updateUserById(userId, {
+        await supabaseAdmin.auth.admin.updateUserById(resolvedUserId, {
           user_metadata: { kyc_status: newKycStatus }
         });
       } catch (authErr) {
         console.warn("Auth user_metadata update skipped/warn:", authErr);
+      }
+    }
+
+    // 4. Send email notification if approved or rejected
+    if (resolvedUserId && (action === 'approve' || action === 'reject')) {
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('first_name, last_name, full_name, email')
+          .eq('id', resolvedUserId)
+          .single();
+
+        let userEmail = profile?.email;
+        let userName = profile?.first_name || profile?.full_name?.split(' ')[0] || 'Valued User';
+
+        if (!userEmail) {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(resolvedUserId);
+          userEmail = authUser?.user?.email;
+          if (!userName && userEmail) userName = userEmail.split('@')[0];
+        }
+
+        if (userEmail) {
+          const dateUtc = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          const emailContent = action === 'approve' 
+            ? emailKycApproved(userName, dateUtc)
+            : emailKycRejected(userName, dateUtc, body.reason || 'Document image was unreadable or details did not match');
+          
+          await sendEmail({
+            to: userEmail,
+            ...emailContent
+          });
+          console.log(`[KYC Email] Sent ${action} notification to ${userEmail}`);
+        }
+      } catch (emailErr) {
+        console.error("[KYC Email Error]:", emailErr);
       }
     }
 
