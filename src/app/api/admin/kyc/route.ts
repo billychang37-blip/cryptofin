@@ -10,72 +10,135 @@ const supabaseAdmin = createClient(
 
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('transactions')
-      .select('id, user_id, status, description, created_at, type')
-      .eq('type', 'kyc_request')
+    // 1. Fetch all KYC applications
+    const { data: applications, error: appError } = await supabaseAdmin
+      .from('kyc_applications')
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (appError) {
+      console.error("KYC applications fetch error:", appError);
+      return NextResponse.json({ error: appError.message }, { status: 500 });
     }
 
-    // Fetch profiles from the database instead of auth.users to ensure we get names
+    // 2. Fetch profiles to match user details (name, email, avatar)
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, email');
+      .select('id, first_name, last_name, full_name, email, avatar_url, country');
 
     if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 500 });
+      console.error("Profiles fetch error in KYC:", profileError);
     }
 
-    const txsWithProfiles = data.map(tx => {
-      const profile = profiles.find(p => p.id === tx.user_id);
+    // 3. Fetch wallets to get 8-digit readable_id (UID)
+    const { data: wallets } = await supabaseAdmin
+      .from('wallets')
+      .select('user_id, readable_id');
+
+    const profileList = profiles || [];
+    const walletList = wallets || [];
+
+    const requests = (applications || []).map(app => {
+      const profile = profileList.find(p => p.id === app.user_id);
+      const wallet = walletList.find(w => w.user_id === app.user_id);
+      const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || profile?.full_name || profile?.email?.split('@')[0] || 'User';
+
       return {
-        ...tx,
+        id: app.id,
+        user_id: app.user_id,
+        country: app.country || profile?.country || 'N/A',
+        document_type: app.document_type || 'National ID card',
+        document_number: app.document_number || 'N/A',
+        image_url: app.image_url || '',
+        status: app.status || 'pending',
+        created_at: app.created_at,
+        updated_at: app.updated_at,
         profiles: {
           first_name: profile?.first_name || '',
           last_name: profile?.last_name || '',
-          email: profile?.email || ''
+          full_name: fullName,
+          email: profile?.email || '',
+          walletId: wallet?.readable_id || 'N/A',
+          avatar_url: profile?.avatar_url || ''
         }
       };
     });
 
-    return NextResponse.json({ requests: txsWithProfiles });
+    return NextResponse.json({ requests });
   } catch (err: any) {
+    console.error("Admin KYC GET error:", err);
     return NextResponse.json({ error: err.message || 'Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { transactionId, userId, action } = await request.json(); 
-    
-    if (!transactionId || !userId || !action) {
-      return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    const body = await request.json();
+    const { applicationId, transactionId, userId, action } = body;
+    const targetId = applicationId || transactionId;
+
+    if (!targetId && !userId) {
+      return NextResponse.json({ error: 'Missing applicationId or userId' }, { status: 400 });
     }
 
-    const newKycStatus = action === 'approve' ? 'approved' : 'unverified';
-    const newTxStatus = action === 'approve' ? 'completed' : 'failed';
+    if (!action || !['approve', 'reject', 'pending'].includes(action)) {
+      return NextResponse.json({ error: 'Invalid action. Must be approve, reject, or pending' }, { status: 400 });
+    }
 
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      user_metadata: { kyc_status: newKycStatus }
+    const newKycStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'pending';
+
+    // 1. Update kyc_applications table (Source of Truth)
+    let query = supabaseAdmin.from('kyc_applications').update({
+      status: newKycStatus,
+      updated_at: new Date().toISOString()
     });
 
-    // ALSO update the profiles table so everything stays perfectly in sync!
-    await supabaseAdmin.from('profiles').update({ kyc_status: newKycStatus }).eq('id', userId);
-
-    if (authError) {
-      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+    if (targetId) {
+      query = query.eq('id', targetId);
+    } else {
+      query = query.eq('user_id', userId);
     }
 
-    const { error: txError } = await supabaseAdmin
-      .from('transactions')
-      .update({ status: newTxStatus })
-      .eq('id', transactionId);
+    const { error: kycUpdateError } = await query;
+    if (kycUpdateError) {
+      console.error("KYC update error:", kycUpdateError);
+      return NextResponse.json({ error: kycUpdateError.message }, { status: 500 });
+    }
 
-    if (txError) {
-      return NextResponse.json({ error: 'Failed to update transaction' }, { status: 500 });
+    // 2. Also sync to user metadata in Auth
+    if (userId) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: { kyc_status: newKycStatus }
+        });
+      } catch (authErr) {
+        console.warn("Auth user_metadata update skipped/warn:", authErr);
+      }
+    }
+
+    return NextResponse.json({ success: true, status: newKycStatus });
+  } catch (err: any) {
+    console.error("Admin KYC POST error:", err);
+    return NextResponse.json({ error: err.message || 'Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('kyc_applications')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

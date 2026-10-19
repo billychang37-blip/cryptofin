@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
 import { createClient } from '@/lib/supabase';
-import { ChevronLeft, Upload, Info, Loader2, CheckCircle, Lock, ChevronDown } from 'lucide-react';
+import { ChevronLeft, Upload, Info, Loader2, CheckCircle, Lock, ChevronDown, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const COUNTRIES = [
@@ -113,25 +113,33 @@ export default function KYCPage() {
         .from('kyc-documents')
         .getPublicUrl(fileName);
 
-      const { error: insertError } = await supabase
+      const { error: upsertError } = await supabase
         .from('kyc_applications')
-        .insert({
+        .upsert({
           user_id: user.id,
           country,
           document_type: docType,
           document_number: docNumber,
           image_url: publicUrlData.publicUrl,
-          status: 'pending'
-        });
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
 
-      if (insertError) {
-        if (insertError.code === '23505') {
-            await supabase.from('kyc_applications').update({
-                country, document_type: docType, document_number: docNumber, image_url: publicUrlData.publicUrl, status: 'pending'
-            }).eq('user_id', user.id);
-        } else {
-            throw insertError;
-        }
+      if (upsertError) {
+        // Fallback update if upsert encounters conflict policy
+        const { error: updateError } = await supabase
+          .from('kyc_applications')
+          .update({
+            country,
+            document_type: docType,
+            document_number: docNumber,
+            image_url: publicUrlData.publicUrl,
+            status: 'pending',
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (updateError) throw updateError;
       }
 
       toast.success("Identity verification submitted successfully.");
@@ -174,6 +182,13 @@ export default function KYCPage() {
       ) : (
          <form onSubmit={handleSubmit} className="space-y-10">
             
+            {status === 'rejected' && (
+               <div className="flex items-center gap-3 p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-sm font-medium">
+                  <AlertCircle size={18} className="shrink-0" />
+                  <span>Your previous verification was rejected. Please review your details, ensure all text on your document is clear and legible, and re-submit.</span>
+               </div>
+            )}
+
             <div className={`flex items-start gap-3 p-4 rounded-xl border ${isDark ? 'bg-white/5 border-white/10 text-zinc-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
                <Info size={16} className="mt-0.5 flex-shrink-0" />
                <p className="text-xs font-medium leading-relaxed">

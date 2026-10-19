@@ -12,9 +12,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   try {
     const params = await context.params;
     const { id } = params;
-    console.log("Fetching profile for ID:", id);
     
-    // Fetch profile
+    // 1. Fetch profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -26,14 +25,20 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       throw profileError;
     }
 
-    // Fetch wallet
+    // 2. Fetch wallet
     const { data: wallet } = await supabaseAdmin
       .from('wallets')
       .select('*')
       .eq('user_id', id)
       .maybeSingle();
 
-    // Assuming DB has been migrated to include these columns
+    // 3. Fetch KYC status from kyc_applications
+    const { data: kyc } = await supabaseAdmin
+      .from('kyc_applications')
+      .select('status')
+      .eq('user_id', id)
+      .maybeSingle();
+
     const mappedWallet = wallet ? {
       ...wallet,
       eth_balance: wallet.balance,
@@ -44,16 +49,19 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       usdc_solana_address: wallet.sol_address,
     } : {};
 
-    const mergedProfile = { ...profile, ...mappedWallet };
+    const mergedProfile = { 
+      ...profile, 
+      ...mappedWallet,
+      kyc_status: kyc?.status || 'unverified'
+    };
 
-    // Fetch transactions
+    // 4. Fetch transactions
     const { data: txData, error: txError } = await supabaseAdmin
       .from('transactions')
       .select('*')
       .eq('user_id', id)
       .order('created_at', { ascending: false });
 
-    // Don't throw txError, just ignore if the table doesn't exist
     if (txError) {
       console.warn("Transactions fetch error:", txError.message);
     }
@@ -70,8 +78,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const { id } = params;
     const body = await request.json();
 
-    // Split body into profile fields and wallet fields
-    const profileFields = {
+    // Extract profile fields (excluding kyc_status since it lives in kyc_applications)
+    const profileFields: Record<string, any> = {
       first_name: body.first_name,
       last_name: body.last_name,
       email: body.email,
@@ -80,12 +88,10 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       address: body.address,
       dob: body.dob,
       status: body.status,
-      account_type: body.account_type,
-      kyc_status: body.kyc_status
+      account_type: body.account_type
     };
 
-    const walletFields = {
-      // Core Balances
+    const walletFields: Record<string, any> = {
       usdt_erc20_balance: body.usdt_erc20_balance,
       usdt_trc20_balance: body.usdt_trc20_balance,
       usdt_bep20_balance: body.usdt_bep20_balance,
@@ -94,14 +100,13 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       usdt_balance: body.usdt_balance,
       usdc_balance: body.usdc_balance,
       btc_balance: body.btc_balance,
-      balance: body.eth_balance, // ETH is 'balance'
+      balance: body.eth_balance,
       sol_balance: body.sol_balance,
       trx_balance: body.trx_balance,
       bnb_balance: body.bnb_balance,
       matic_balance: body.matic_balance,
       avax_balance: body.avax_balance,
       
-      // Addresses
       address: body.address ?? body.usdt_erc20_address ?? body.usdt_bep20_address ?? body.usdc_bep20_address,
       trx_address: body.trx_address ?? body.usdt_trc20_address,
       sol_address: body.sol_address ?? body.usdc_solana_address,
@@ -116,10 +121,10 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     };
 
     // Remove undefined values
-    (Object.keys(profileFields) as Array<keyof typeof profileFields>).forEach(key => {
+    Object.keys(profileFields).forEach(key => {
       if (profileFields[key] === undefined) delete profileFields[key];
     });
-    (Object.keys(walletFields) as Array<keyof typeof walletFields>).forEach(key => {
+    Object.keys(walletFields).forEach(key => {
       if (walletFields[key] === undefined) delete walletFields[key];
     });
 
@@ -133,8 +138,32 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       if (wError) throw wError;
     }
 
+    // Sync KYC status if provided
+    if (body.kyc_status !== undefined) {
+      const { error: kycError } = await supabaseAdmin
+        .from('kyc_applications')
+        .upsert({
+          user_id: id,
+          status: body.kyc_status,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (kycError) {
+        console.warn("KYC sync error in PUT user:", kycError.message);
+      }
+
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(id, {
+          user_metadata: { kyc_status: body.kyc_status }
+        });
+      } catch (authErr) {
+        console.warn("Auth user_metadata update skipped:", authErr);
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    console.error("PUT user error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
